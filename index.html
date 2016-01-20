@@ -1,0 +1,153 @@
+<!--
+var fs = require('fs');
+var path = require('path');
+
+require('http').createServer(function (request, response) {
+  if (request.url.startsWith('/upload') && request.method === 'POST') {
+    var isBinary;
+    var targetName;
+
+    if (request.url.startsWith('/uploadbinary/')) {
+      targetName = request.url.replace('/uploadbinary/', '');
+      isBinary = true;
+    } else if (request.url.startsWith('/uploadtext/')) {
+      targetName = request.url.replace('/uploadtext/', '');
+      isBinary = false;
+    } else {
+      console.log('Unknown API request on ' + request.url);
+      response.writeHead(405);
+      response.end('HTTP 405 Method not allowed');
+      return;
+    }
+
+    // not ., .., and such things inside file name
+    targetName = targetName.replace(/^\.+/g, '').replace(/[\/\\]/g, '');
+
+    // parse a file upload
+    var sb = [];
+    request.on('data', function (data) {
+      sb.push(data);
+    });
+
+    request.on('end', function () {
+      var data = sb.join('');
+      var targetPath = targetName;
+      var buffer;
+      if (isBinary) {
+        buffer = new Buffer(data, 'base64');
+      }
+      if (!fs.existsSync('./output')) {
+        fs.mkdirSync('./output');
+      }
+
+      fs.writeFile('./output/' + targetPath, buffer, function (err) {
+        if (err) { console.log(err); }
+      });
+
+      response.writeHead(200, 'OK', {
+        'Content-Type' : 'text/plain',
+        'Access-Control-Allow-Origin': '*'
+      });
+      response.end();
+      console.log('"' + targetPath + '" SAVED!');
+    });
+
+  } else if (request.method === 'GET') {
+    var filePath = request.url.replace(/^\.+/g, '').replace(/[\/\\]/g, '');
+
+    if (filePath === '')
+      filePath = 'index.html';
+
+    var ext = path.extname('./' + filePath);
+    switch (ext) {
+    case '.html':
+    case '.htm':
+      contentType = 'text/html';
+      break;
+    case '.js':
+      contentType = 'text/javascript';
+      break;
+    case '.css':
+      contentType = 'text/css';
+      break;
+    default:
+      contentType = 'application/octet-stream';
+    }
+
+    fs.exists(filePath, function (exists) {
+      if (exists) {
+        fs.readFile(filePath, function (error, content) {
+          if (error) {
+            response.writeHead(500);
+            response.end();
+          } else {
+            response.writeHead(200, {
+              'Content-Type' : contentType,
+              'Access-Control-Allow-Origin': '*'
+            });
+            response.end(content, 'utf-8');
+            console.log('"' + filePath + '" SERVED!');
+          }
+        });
+      } else {
+        response.writeHead(404);
+        response.end('HTTP 404 File not found');
+      }
+    });
+
+  } else {
+    console.log('Unknown API request on ' + request.url);
+    response.writeHead(405);
+    response.end('HTTP Error 405 Method not allowed');
+  }
+}).listen(9090, '0.0.0.0');
+
+console.log('pad.js is listening on 9090 port of all network interfaces');
+
+/* -->
+ 
+<html lang=en dir=ltr>
+<head>
+</head>
+<body>
+<h1>pad.js</h1>
+<h2>Total fancy webserver to make access of local files and upload new ones from browsers' console easier</h2>
+
+<h3>Setup:</h3>
+<pre>curl ebraminio.github.io/p/ | node</pre>
+
+<h3>Show cases:</h3>
+
+<u>download a file from the place the server is ran from:</u>
+<pre>
+fetch('http://127.0.0.1:9090/a.txt')
+  .then(x => x.text())
+  .then(x => console.log('File content: ' + x));
+</pre>
+
+<u>upload a text file and store it on /output folder:</u>
+<pre>
+fetch('http://127.0.0.1:9090/uploadtext/a.txt', { method: 'post', body: 'STRING YOU LIKE TO SAVE' })
+  .then(x => x.text())
+  .then(() => console.log('a.txt is uploaded'));
+</pre>
+
+<u>upload a base64 encoded file:</u>
+<pre>
+// Create a canvas, make 200x200 blue rectangle on it, upload its base64 encoded binary
+var canvas = document.createElement('canvas'), context = canvas.getContext('2d');
+canvas.width = 200; canvas.height = 200; context.fillStyle = 'blue'; context.fillRect(0, 0, 200, 200);
+var png = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
+ 
+fetch('http://127.0.0.1:9090/uploadtext/a.png', { method: 'post', body: png })
+  .then(x => x.text())
+  .then(() => console.log('a.txt is uploaded'));
+</pre>
+
+<em>Note: The API may would be subject of deep changes so please don't rely much on the dynamic downloadable version of it for now.</em>
+</p>
+ 
+</body>
+</html>
+
+<!-- */
