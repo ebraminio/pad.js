@@ -1,4 +1,5 @@
 <!--
+
 var fs = require('fs');
 var path = require('path');
 
@@ -70,6 +71,9 @@ require('http').createServer(function (request, response) {
     case '.css':
       contentType = 'text/css';
       break;
+    case '.txt':
+      contentType = 'text/plain';
+      break;
     default:
       contentType = 'application/octet-stream';
     }
@@ -114,7 +118,7 @@ console.log('pad.js is listening on 9090 port of all network interfaces');
 <h2>Total fancy webserver to make access of local files and upload new ones from browsers' console easier</h2>
 
 <h3>Setup:</h3>
-<pre>curl ebraminio.github.io/p/ | node</pre>
+<pre>curl pad.js.org | node</pre>
 
 <h3>Show cases:</h3>
 
@@ -139,7 +143,7 @@ var canvas = document.createElement('canvas'), context = canvas.getContext('2d')
 canvas.width = 200; canvas.height = 200; context.fillStyle = 'blue'; context.fillRect(0, 0, 200, 200);
 var png = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
  
-fetch('http://127.0.0.1:9090/uploadtext/a.png', { method: 'post', body: png })
+fetch('http://127.0.0.1:9090/uploadbinary/a.png', { method: 'post', body: png })
   .then(x => x.text())
   .then(() => console.log('a.txt is uploaded'));
 </pre>
