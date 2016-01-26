@@ -4,15 +4,15 @@ var fs = require('fs');
 var path = require('path');
 
 require('http').createServer(function (request, response) {
-  if (request.url.startsWith('/upload') && request.method === 'POST') {
+  if (request.url.match(/^\/upload\//) && request.method === 'POST') {
     var isBinary;
     var targetName;
 
-    if (request.url.startsWith('/uploadbinary/')) {
-      targetName = request.url.replace('/uploadbinary/', '');
+    if (request.url.match(/^\/uploadbinary\//)) {
+      targetName = request.url.replace(/^\/uploadbinary\//, '');
       isBinary = true;
-    } else if (request.url.startsWith('/uploadtext/')) {
-      targetName = request.url.replace('/uploadtext/', '');
+    } else if (request.url.match(/^\/uploadtext\//)) {
+      targetName = request.url.replace(/^\/uploadtext\//, '');
       isBinary = false;
     } else {
       console.log('Unknown API request on ' + request.url);
