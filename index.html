@@ -109,7 +109,7 @@ require('http').createServer(function (request, response) {
 console.log('pad.js is listening on 9090 port of all network interfaces');
 
 /* -->
- 
+
 <html lang=en dir=ltr>
 <head>
 </head>
@@ -122,6 +122,9 @@ console.log('pad.js is listening on 9090 port of all network interfaces');
 
 <p>You should probably use this instead if you are using Debian/Ubuntu based Linux distribution:</p>
 <pre>curl pad.js.org | nodejs</pre>
+
+<p>And try this on Windows:</p>
+<pre>@powershell -Command "(iwr pad.js.org).Content | node"</pre>
 
 <h3>Show cases:</h3>
 
@@ -145,7 +148,7 @@ fetch('http://127.0.0.1:9090/uploadtext/a.txt', { method: 'post', body: 'STRING 
 var canvas = document.createElement('canvas'), context = canvas.getContext('2d');
 canvas.width = 200; canvas.height = 200; context.fillStyle = 'blue'; context.fillRect(0, 0, 200, 200);
 var png = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
- 
+
 fetch('http://127.0.0.1:9090/uploadbinary/a.png', { method: 'post', body: png })
   .then(x => x.text())
   .then(() => console.log('a.txt is uploaded'));
