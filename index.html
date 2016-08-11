@@ -6,8 +6,7 @@ var path = require('path');
 // http://stackoverflow.com/a/38897674/1414809
 function fileSizeSI(size) {
   var e = (Math.log(size) / Math.log(1e3)) | 0;
-  return +(size / Math.pow(1e3, e)).toFixed(2) + ' ' +
-    ('kMGTPEZY'[e - 1] || '') + 'B';
+  return Math.floor(size / Math.pow(1e3, e)) + ('kMGTPEZY'[e - 1] || '') + 'B';
 }
 
 var contentTypes = {
@@ -65,7 +64,7 @@ require('http').createServer(function (req, res) {
   } else if (req.method === 'GET') {
     if (fileName === '') {
       fs.readdir('.', function (err, dir) {
-        res.end('<h1>' + __dirname + '</h1><table>' + dir
+        res.end('<h1>' + __dirname + '</h1><hr><pre><table>' + dir
           // no hidden files
           .filter(function (x) { return x.indexOf('.') !== 0; })
           // no directories
@@ -73,8 +72,10 @@ require('http').createServer(function (req, res) {
           .filter(function (x) { return x[1].isFile(); })
           .map(function (x) {
             return '<tr><td><a href="' + x[0] + '">' + x[0] + '</a></td><td>' +
+              '&nbsp;&nbsp;&nbsp;' + x[1].mtime.toString().split('(')[0] +
+              '&nbsp;&nbsp;&nbsp;</td><td>' +
               fileSizeSI(x[1].size) + '</td></tr>';
-          }).join('') + '</table>'
+          }).join('') + '</table></pre><hr>'
         );
       });
       return;
