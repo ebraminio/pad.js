@@ -6,8 +6,30 @@ var path = require('path');
 // http://stackoverflow.com/a/38897674/1414809
 function fileSizeSI(size) {
   var e = (Math.log(size) / Math.log(1e3)) | 0;
-  return +(size / Math.pow(1e3, e)).toFixed(2) + ' ' + ('kMGTPEZY'[e - 1] || '') + 'B';
+  return +(size / Math.pow(1e3, e)).toFixed(2) + ' ' +
+    ('kMGTPEZY'[e - 1] || '') + 'B';
 }
+
+var contentTypes = {
+  html: 'text/html',
+  htm: 'text/html',
+  js: 'text/javascript',
+  css: 'text/css',
+  txt: 'text/plain',
+  png: 'image/png',
+  bmp: 'image/bmp',
+  gif: 'image/gif',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  mp3: 'audio/mpeg',
+  mpeg: 'video/mpeg',
+  avi: 'video/avi',
+  mkv: 'video/webm',
+  webm: 'video/webm',
+  pdf: 'application/pdf',
+  svg: 'image/svg+xml',
+  txt: 'text/plain'
+};
 
 require('http').createServer(function (req, res) {
   'use strict';
@@ -50,33 +72,17 @@ require('http').createServer(function (req, res) {
           .map(function (x) { return [x, fs.statSync(x)]; })
           .filter(function (x) { return x[1].isFile(); })
           .map(function (x) {
-            return '<tr><td><a href="' + x[0] + '">' + x[0] + '</a></td><td>' + fileSizeSI(x[1].size) + '</td></tr>';
+            return '<tr><td><a href="' + x[0] + '">' + x[0] + '</a></td><td>' +
+              fileSizeSI(x[1].size) + '</td></tr>';
           }).join('') + '</table>'
         );
       });
       return;
     }
 
-    var contentType = {
-      html: 'text/html',
-      htm: 'text/html',
-      js: 'text/javascript',
-      css: 'text/css',
-      txt: 'text/plain',
-      png: 'image/png',
-      bmp: 'image/bmp',
-      gif: 'image/gif',
-      jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      mp3: 'audio/mpeg',
-      mpeg: 'video/mpeg',
-      avi: 'video/avi',
-      mkv: 'video/webm',
-      webm: 'video/webm',
-      pdf: 'application/pdf',
-      svg: 'image/svg+xml',
-      txt: 'text/plain'
-    }[path.extname('./' + fileName).replace(/^./, '')] || 'application/octet-stream';
+    var contentType =
+      contentTypes[path.extname('./' + fileName).replace(/^./, '')]
+        || 'application/octet-stream';
 
     fs.exists(fileName, function (exists) {
       if (exists) {
