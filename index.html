@@ -3,61 +3,56 @@
 var fs = require('fs');
 var path = require('path');
 
-require('http').createServer(function (request, response) {
-  if (request.url.match(/^\/upload\//) && request.method === 'POST') {
-    var isBinary;
-    var targetName;
+require('http').createServer(function (req, res) {
+  if (req.url.match(/^\/upload(binary|text)\//) && req.method === 'POST') {
+    var isBinary = req.url.indexOf('/uploadbinary/') === 0;
+    var targetName = req.url.replace(/^\/upload(binary|text)\//, '');
 
-    if (request.url.match(/^\/uploadbinary\//)) {
-      targetName = request.url.replace(/^\/uploadbinary\//, '');
-      isBinary = true;
-    } else if (request.url.match(/^\/uploadtext\//)) {
-      targetName = request.url.replace(/^\/uploadtext\//, '');
-      isBinary = false;
-    } else {
-      console.log('Unknown API request on ' + request.url);
-      response.writeHead(405);
-      response.end('HTTP 405 Method not allowed');
-      return;
-    }
-
-    // not ., .., and such things inside file name
+    // wipe all ., .., and directory separator inside file name
     targetName = targetName.replace(/^\.+/g, '').replace(/[\/\\]/g, '');
 
     // parse a file upload
     var sb = [];
-    request.on('data', function (data) {
+    req.on('data', function (data) {
       sb.push(data);
     });
 
-    request.on('end', function () {
+    req.on('end', function () {
       var data = sb.join('');
-      var targetPath = targetName;
-      var buffer;
-      if (isBinary) {
-        buffer = new Buffer(data, 'base64');
-      }
-      if (!fs.existsSync('./output')) {
-        fs.mkdirSync('./output');
-      }
+      var buffer = new Buffer(data, isBinary ? 'base64' : undefined);
 
-      fs.writeFile('./output/' + targetPath, buffer, function (err) {
-        if (err) { console.log(err); }
+      fs.writeFile(targetName, buffer, { flag: 'wx' }, function (err) {
+        if (err) {
+          console.log(err);
+          res.writeHead(409);
+          res.end('HTTP Error 409 Conflict');
+          return;
+        }
+        res.writeHead(200, 'OK', {
+          'Content-Type' : 'text/plain',
+          'Access-Control-Allow-Origin': '*'
+        });
+        res.end('Done');
+        console.log('"' + targetName + '" SAVED!');
       });
-
-      response.writeHead(200, 'OK', {
-        'Content-Type' : 'text/plain',
-        'Access-Control-Allow-Origin': '*'
-      });
-      response.end();
-      console.log('"' + targetPath + '" SAVED!');
     });
 
-  } else if (request.method === 'GET') {
-    var filePath = request.url.replace(/^\.+/g, '').replace(/[\/\\]/g, '');
+  } else if (req.method === 'GET') {
+    var filePath = req.url.replace(/^\.+/g, '').replace(/[\/\\]/g, '');
 
-    if (filePath === '')
-      filePath = 'index.html';
+    if (filePath === '') {
+      fs.readdir('.', function (err, dir) {
+        res.end('<h1>' + __dirname + '</h1>' + dir
+          // no hidden files
+          .filter(function (x) { return x.indexOf('.') !== 0; })
+          // no directories
+          .filter(function (x) { return fs.statSync(x).isFile(); })
+          .map(function (x) { return '<a href="' + x + '">' + x + '</a>'; })
+          .join('<br>')
+        );
+      });
+      return;
+    }
 
     var ext = path.extname('./' + filePath);
     switch (ext) {
@@ -82,27 +77,27 @@ require('http').createServer(function (request, response) {
       if (exists) {
         fs.readFile(filePath, function (error, content) {
           if (error) {
-            response.writeHead(500);
-            response.end();
+            res.writeHead(500);
+            res.end();
           } else {
-            response.writeHead(200, {
+            res.writeHead(200, {
               'Content-Type' : contentType,
               'Access-Control-Allow-Origin': '*'
             });
-            response.end(content, 'utf-8');
+            res.end(content, 'utf-8');
             console.log('"' + filePath + '" SERVED!');
           }
         });
       } else {
-        response.writeHead(404);
-        response.end('HTTP 404 File not found');
+        res.writeHead(404);
+        res.end('HTTP 404 File not found');
       }
     });
 
   } else {
-    console.log('Unknown API request on ' + request.url);
-    response.writeHead(405);
-    response.end('HTTP Error 405 Method not allowed');
+    console.log('Unknown API request on ' + req.url);
+    res.writeHead(405);
+    res.end('HTTP Error 405 Method not allowed');
   }
 }).listen(9090, '0.0.0.0');
 
@@ -110,10 +105,6 @@ console.log('pad.js is listening on 9090 port of all network interfaces');
 
 /* -->
 
-<html lang=en dir=ltr>
-<head>
-</head>
-<body>
 <h1>pad.js</h1>
 <h2>Total fancy webserver to make access of local files and upload new ones from browsers' console easier</h2>
 
@@ -139,7 +130,7 @@ fetch('http://127.0.0.1:9090/a.txt')
 <pre>
 fetch('http://127.0.0.1:9090/uploadtext/a.txt', { method: 'post', body: 'STRING YOU LIKE TO SAVE' })
   .then(x => x.text())
-  .then(() => console.log('a.txt is uploaded'));
+  .then(console.log);
 </pre>
 
 <u>upload a base64 encoded file:</u>
@@ -151,15 +142,12 @@ var png = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
 
 fetch('http://127.0.0.1:9090/uploadbinary/a.png', { method: 'post', body: png })
   .then(x => x.text())
-  .then(() => console.log('a.txt is uploaded'));
+  .then(console.log);
 </pre>
 
 <em>Note: The API may would be subject of deep changes so please don't rely much on the dynamic downloadable version of it for now.</em>
 </p>
 
 <p><a href="https://github.com/ebraminio/pad.js">Source</a></p>
-
-</body>
-</html>
 
 <!-- */
