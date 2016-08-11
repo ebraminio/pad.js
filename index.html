@@ -12,9 +12,9 @@ function fileSizeSI(size) {
 require('http').createServer(function (req, res) {
   'use strict';
   // wipe all ., .., and directory separator inside file name
-  var fileName = req.url.replace(/^\.+/g, '').replace(/[\/\\]/g, '');
+  var fileName = req.url.replace(/[\/\\]/g, '').replace(/^\.+/g, '');
   if (req.method === 'POST') {
-    // parse a file upload
+    // aggregate received chunks of file
     var sb = [];
     req.on('data', function (data) {
       sb.push(data);
@@ -94,6 +94,7 @@ require('http').createServer(function (req, res) {
           }
         });
       } else {
+        console.log('"' + fileName + '" was requested but not found.');
         res.writeHead(404);
         res.end('HTTP 404 File not found');
       }
