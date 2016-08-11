@@ -21,6 +21,7 @@ var contentTypes = {
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   mp3: 'audio/mpeg',
+  mp4: 'video/mp4',
   mpeg: 'video/mpeg',
   avi: 'video/avi',
   mkv: 'video/webm',
@@ -33,7 +34,7 @@ var contentTypes = {
 require('http').createServer(function (req, res) {
   'use strict';
   // wipe all ., .., and directory separator inside file name
-  var fileName = req.url.replace(/[\/\\]/g, '').replace(/^\.+/g, '');
+  var fileName = decodeURI(req.url.replace(/[\/\\]/g, '').replace(/^\.+/g, ''));
   if (req.method === 'POST') {
     // aggregate received chunks of file
     var sb = [];
@@ -87,19 +88,40 @@ require('http').createServer(function (req, res) {
 
     fs.exists(fileName, function (exists) {
       if (exists) {
-        fs.readFile(fileName, function (err, content) {
-          if (err) {
-            res.writeHead(500);
-            res.end();
-          } else {
-            res.writeHead(200, {
-              'Content-Type' : contentType,
-              'Access-Control-Allow-Origin': '*'
-            });
-            res.end(content, 'utf-8');
-            console.log('"' + fileName + '" SERVED!');
-          }
-        });
+        // http://stackoverflow.com/a/28972079/1414809
+        var stat = fs.statSync(fileName);
+        var total = stat.size;
+
+        if (req.headers.range) {
+          var range = req.headers.range;
+          var parts = range.replace(/bytes=/, "").split("-");
+          var partialstart = parts[0];
+          var partialend = parts[1];
+
+          var start = parseInt(partialstart, 10);
+          var end = partialend ? parseInt(partialend, 10) : total - 1;
+          var chunksize = (end - start) + 1;
+          console.log('"' + fileName + '" SERVED! '
+            + 'RANGE: ' + start + ' - ' + end + ' = ' + chunksize);
+
+          var file = fs.createReadStream(fileName, { start: start, end: end });
+          res.writeHead(206, {
+            'Content-Range': 'bytes ' + start + '-' + end + '/' + total,
+            'Accept-Ranges': 'bytes',
+            'Content-Length': chunksize,
+            'Content-Type': contentType,
+            'Access-Control-Allow-Origin': '*'
+          });
+          file.pipe(res);
+        } else {
+          console.log('"' + fileName + '" SERVED!');
+          res.writeHead(200, {
+            'Content-Length': total,
+            'Content-Type': contentType,
+            'Access-Control-Allow-Origin': '*'
+          });
+          fs.createReadStream(fileName).pipe(res);
+        }
       } else {
         console.log('"' + fileName + '" was requested but not found.');
         res.writeHead(404);
