@@ -3,15 +3,17 @@
 var fs = require('fs');
 var path = require('path');
 
+// http://stackoverflow.com/a/38897674/1414809
+function fileSizeSI(size) {
+  var e = (Math.log(size) / Math.log(1e3)) | 0;
+  return +(size / Math.pow(1e3, e)).toFixed(2) + ' ' + ('kMGTPEZY'[e - 1] || '') + 'B';
+}
+
 require('http').createServer(function (req, res) {
   'use strict';
-  if (req.url.match(/^\/upload(binary|text)\//) && req.method === 'POST') {
-    var isBinary = req.url.indexOf('/uploadbinary/') === 0;
-    var targetName = req.url.replace(/^\/upload(binary|text)\//, '');
-
-    // wipe all ., .., and directory separator inside file name
-    targetName = targetName.replace(/^\.+/g, '').replace(/[\/\\]/g, '');
-
+  // wipe all ., .., and directory separator inside file name
+  var fileName = req.url.replace(/^\.+/g, '').replace(/[\/\\]/g, '');
+  if (req.method === 'POST') {
     // parse a file upload
     var sb = [];
     req.on('data', function (data) {
@@ -20,9 +22,9 @@ require('http').createServer(function (req, res) {
 
     req.on('end', function () {
       var data = sb.join('');
-      var buffer = new Buffer(data, isBinary ? 'base64' : undefined);
+      var buffer = new Buffer(data, 'base64');
 
-      fs.writeFile(targetName, buffer, { flag: 'wx' }, function (err) {
+      fs.writeFile(fileName, buffer, { flag: 'wx' }, function (err) {
         if (err) {
           console.log(err.message);
           res.writeHead(409);
@@ -33,32 +35,23 @@ require('http').createServer(function (req, res) {
             'Access-Control-Allow-Origin': '*'
           });
           res.end('Done');
-          console.log('"' + targetName + '" SAVED!');
+          console.log('"' + fileName + '" SAVED!');
         }
       });
     });
 
   } else if (req.method === 'GET') {
-    var filePath = req.url.replace(/^\.+/g, '').replace(/[\/\\]/g, '');
-
-    // http://stackoverflow.com/a/38897674/1414809
-    function fileSizeSI(size) {
-      var e = (Math.log(size) / Math.log(1e3)) | 0;
-      return +(size / Math.pow(1e3, e)).toFixed(2) + ' ' + ('kMGTPEZY'[e - 1] || '') + 'B';
-    }
-
-    if (filePath === '') {
+    if (fileName === '') {
       fs.readdir('.', function (err, dir) {
-        res.end('<h1>' + __dirname + '</h1><table><tr>' + dir
+        res.end('<h1>' + __dirname + '</h1><table>' + dir
           // no hidden files
           .filter(function (x) { return x.indexOf('.') !== 0; })
           // no directories
           .map(function (x) { return [x, fs.statSync(x)]; })
           .filter(function (x) { return x[1].isFile(); })
           .map(function (x) {
-            return '<td><a href="' + x[0] + '">' + x[0] + '</a></td><td>' + fileSizeSI(x[1].size) + '</td>';
-          })
-          .join('</tr><tr>') + '</tr></table>'
+            return '<tr><td><a href="' + x[0] + '">' + x[0] + '</a></td><td>' + fileSizeSI(x[1].size) + '</td></tr>';
+          }).join('') + '</table>'
         );
       });
       return;
@@ -77,14 +70,17 @@ require('http').createServer(function (req, res) {
       jpeg: 'image/jpeg',
       mp3: 'audio/mpeg',
       mpeg: 'video/mpeg',
+      avi: 'video/avi',
+      mkv: 'video/webm',
+      webm: 'video/webm',
       pdf: 'application/pdf',
       svg: 'image/svg+xml',
       txt: 'text/plain'
-    }[path.extname('./' + filePath).replace(/^./, '')] || 'application/octet-stream';
+    }[path.extname('./' + fileName).replace(/^./, '')] || 'application/octet-stream';
 
-    fs.exists(filePath, function (exists) {
+    fs.exists(fileName, function (exists) {
       if (exists) {
-        fs.readFile(filePath, function (err, content) {
+        fs.readFile(fileName, function (err, content) {
           if (err) {
             res.writeHead(500);
             res.end();
@@ -94,7 +90,7 @@ require('http').createServer(function (req, res) {
               'Access-Control-Allow-Origin': '*'
             });
             res.end(content, 'utf-8');
-            console.log('"' + filePath + '" SERVED!');
+            console.log('"' + fileName + '" SERVED!');
           }
         });
       } else {
@@ -102,9 +98,7 @@ require('http').createServer(function (req, res) {
         res.end('HTTP 404 File not found');
       }
     });
-
   } else {
-    console.log('Unknown API request on ' + req.url);
     res.writeHead(405);
     res.end('HTTP Error 405 Method not allowed');
   }
@@ -124,7 +118,7 @@ console.log('pad.js is listening on 9090 port of all network interfaces');
 <pre>curl pad.js.org | nodejs</pre>
 
 <p>And try this on Windows:</p>
-<pre>@powershell -Command "(iwr pad.js.org).Content | node"</pre>
+<pre>powershell -Command "(iwr pad.js.org).Content | node"</pre>
 
 <h3>Show cases:</h3>
 
@@ -135,9 +129,9 @@ fetch('http://127.0.0.1:9090/a.txt')
   .then(x => console.log('File content: ' + x));
 </pre>
 
-<u>upload a text file and store it on /output folder:</u>
+<u>upload a text file:</u>
 <pre>
-fetch('http://127.0.0.1:9090/uploadtext/a.txt', { method: 'post', body: 'STRING YOU LIKE TO SAVE' })
+fetch('http://127.0.0.1:9090/a.txt', { method: 'post', body: btoa('STRING YOU LIKE TO SAVE') })
   .then(x => x.text())
   .then(console.log);
 </pre>
@@ -149,7 +143,7 @@ var canvas = document.createElement('canvas'), context = canvas.getContext('2d')
 canvas.width = 200; canvas.height = 200; context.fillStyle = 'blue'; context.fillRect(0, 0, 200, 200);
 var png = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
 
-fetch('http://127.0.0.1:9090/uploadbinary/a.png', { method: 'post', body: png })
+fetch('http://127.0.0.1:9090/a.png', { method: 'post', body: png })
   .then(x => x.text())
   .then(console.log);
 </pre>
