@@ -48,7 +48,7 @@ require('http').createServer(function (req, res) {
         if (err) {
           console.log(err.message);
           res.writeHead(409);
-          res.end('HTTP Error 409 Conflict');
+          res.end('HTTP Error 409 Conflict, a file with same name exists');
         } else {
           res.writeHead(200, 'OK', {
             'Content-Type' : 'text/plain',
@@ -98,12 +98,16 @@ require('http').createServer(function (req, res) {
         'document.addEventListener("dragover", stopEvent, false);',
         'document.addEventListener("drop", function (e) {',
         '  stopEvent(e);',
+        '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
+          'width: 100%; height: 100%;opacity: .9;position: absolute; ' +
+          'background-color: white;text-align: center; padding-top: 10em;' +
+          '\'>Uploading&hellip;</pre>";',
         '  var file = e.dataTransfer.files[0], reader = new FileReader();',
         '  reader.addEventListener("load", function () {',
-        '    fetch(file.name, { method: "post", body: ' +
-                'reader.result.replace(/^[^,]*?,/, "") })',
-        '      .then(function (x) { x.text(); })',
-        '      .then(function () { location.reload(); }, alert);',
+        '    fetch(file.name, { method: "post", ' +
+                 'body: reader.result.replace(/^[^,]*?,/, "") })',
+        '      .then(function (x) { return x.text(); }).catch(alert)',
+        '      .then(function (x) { x === "Done" || alert(x); location.reload(); });',
         '  }, false);',
         '  reader.readAsDataURL(file);',
         '});',
