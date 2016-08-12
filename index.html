@@ -171,7 +171,7 @@ console.log('pad.js is listening on 9090 port of all network interfaces');
 /* -->
 
 <h1>pad.js</h1>
-<h2>Total fancy webserver to make access of local files and upload new ones from browsers' console easier</h2>
+<h2>Total fancy webserver, usable for transfering files from/to browser console or terminal</h2>
 
 <h3>Setup:</h3>
 <pre>curl pad.js.org | node</pre>
@@ -210,8 +210,8 @@ fetch('http://127.0.0.1:9090/a.png', { method: 'post', body: png })
   .then(console.log);
 </pre>
 
-<em>Note: The API may would be subject of deep changes so please don't rely much on the dynamic downloadable version of it for now.</em>
-</p>
+<u>upload a file from terminal:</u>
+<pre>base64 a.png | curl -d @- http://127.0.0.1:9090/a.png</pre>
 
 <p><a href="https://github.com/ebraminio/pad.js">Source</a></p>
 
