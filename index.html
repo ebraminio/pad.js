@@ -167,7 +167,14 @@ require('http').createServer(function (req, res) {
 }).listen(9090, '0.0.0.0');
 
 console.log('pad.js is listening on 9090 port of all network interfaces');
-
+var ifs = require('os').networkInterfaces();
+console.log('(' + Object.keys(ifs)
+  .map(function (x) {
+    return [x, ifs[x].filter(x => x.family === 'IPv4')[0]];
+  })
+  .filter(function (x) { return x[1]; })
+  .map(function (x) { return x[0] + ': http://' + x[1].address + ':9090'; })
+  .join(', ') + ')');
 /* -->
 
 <h1>pad.js</h1>
