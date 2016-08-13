@@ -2,6 +2,7 @@
 'use strict';
 var fs = require('fs');
 var path = require('path');
+var os = require('os');
 
 // http://stackoverflow.com/a/38897674/1414809
 function fileSizeSI(size) {
@@ -67,7 +68,8 @@ require('http').createServer(function (req, res) {
         ' <meta charset="utf-8">',
         ' <style>td { padding: 0; } th { padding: 0 0 3px; }</style>',
         '</head>', ' <body style="background-color: #F5F5F5;">',
-        ' <h2 style="margin-bottom: 12px;">' + process.cwd() + '</h2>',
+        ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
+          process.cwd() + '</h2>',
         ' <div style="background-color: white; ' +
         'border-top: 1px solid #646464; border-bottom: 1px solid #646464;' +
         'padding-top: 10px; padding-bottom: 14px;">',
@@ -92,7 +94,8 @@ require('http').createServer(function (req, res) {
         ' </table>', ' </div>', ' <div style="' +
         'font: 90% monospace; color: #787878; padding-top: 4px;' +
         '">pad.js.org, supports drag and drop upload, your IP is: ' +
-          req.connection.remoteAddress + '</div>', ' <script>',
+          req.connection.remoteAddress + " " +
+          (req.headers['x-forwarded-for'] || '') + '</div>', ' <script>',
         'function stopEvent(e) { e.stopPropagation(); e.preventDefault(); }',
         'document.addEventListener("dragleave", stopEvent, false);',
         'document.addEventListener("dragover", stopEvent, false);',
@@ -167,10 +170,10 @@ require('http').createServer(function (req, res) {
 }).listen(9090, '0.0.0.0');
 
 console.log('pad.js is listening on 9090 port of all network interfaces');
-var ifs = require('os').networkInterfaces();
+var ifs = os.networkInterfaces();
 console.log('(' + Object.keys(ifs)
   .map(function (x) {
-    return [x, ifs[x].filter(x => x.family === 'IPv4')[0]];
+    return [x, ifs[x].filter(function (x) { return x.family === 'IPv4'; })[0]];
   })
   .filter(function (x) { return x[1]; })
   .map(function (x) { return x[0] + ': http://' + x[1].address + ':9090'; })
