@@ -96,7 +96,7 @@ require('http').createServer(function (req, res) {
         ' </table>', ' </div>', ' <div style="' +
         'font: 90% monospace; color: #787878; padding-top: 4px;' +
         '">pad.js.org, supports drag and drop upload, your IP is: ' +
-          req.connection.remoteAddress + " " +
+          req.connection.remoteAddress + ' ' +
           (req.headers['x-forwarded-for'] || '') + '</div>', ' <script>',
         'function stopEvent(e) { e.stopPropagation(); e.preventDefault(); }',
         'document.addEventListener("dragleave", stopEvent, false);',
@@ -109,7 +109,7 @@ require('http').createServer(function (req, res) {
           '\'>Uploading&hellip;</pre>";',
         '  var file = e.dataTransfer.files[0], reader = new FileReader();',
         '  reader.addEventListener("load", function () {',
-        '    fetch(file.name, { method: "post", ' +
+        '    fetch(encodeURIComponent(file.name), { method: "post", ' +
                  'body: reader.result.replace(/^[^,]*?,/, "") })',
         '      .then(function (x) { return x.text(); }).catch(alert)',
         '      .then(function (x) { x === "Done" || alert(x); location.reload(); });',
