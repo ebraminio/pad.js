@@ -31,6 +31,8 @@ var contentTypes = {
   svg: 'image/svg+xml'
 };
 
+var port = process.argv[2] || 9090;
+
 require('http').createServer(function (req, res) {
   // wipe all ., .., and directory separator inside file name
   var fileName = decodeURI(req.url.replace(/[\/\\]/g, '').replace(/^\.+/g, ''));
@@ -169,9 +171,9 @@ require('http').createServer(function (req, res) {
       }
     });
   }
-}).listen(9090, '0.0.0.0');
+}).listen(port, '0.0.0.0');
 
-console.log('pad.js is listening on 9090 port of all network interfaces');
+console.log('pad.js is listening on ' + port + ' port of all network interfaces');
 var ifs = os.networkInterfaces();
 // http://stackoverflow.com/a/38929214/1414809
 console.log('(' + Object.keys(ifs)
