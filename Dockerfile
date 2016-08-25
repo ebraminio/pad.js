@@ -1,6 +1,9 @@
-FROM node:slim
+FROM alpine
+RUN apk update && \
+    apk add nodejs
+
 RUN mkdir -p /app
-COPY . /app
+ADD index.html /app/index.html
 WORKDIR /files
 VOLUME /files
 EXPOSE 9090
