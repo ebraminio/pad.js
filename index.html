@@ -197,8 +197,8 @@ console.log('(' + Object.keys(ifs)
 <p>And try this on Windows:</p>
 <pre>powershell -Command "(iwr pad.js.org).Content | node"</pre>
 
-<p>And this, which sets up it as a docker daemon</p>
-<pre>docker run --restart=always -d -p 9090:9090 quay.io/ebraminio/pad.js</pre>
+<p>This sets it up as a Docker daemon:</p>
+<pre>docker run --restart=always -v /files:/files --name pad.js -d -p 9090:9090 quay.io/ebraminio/pad.js</pre>
 
 <h3>Show cases:</h3>
 
