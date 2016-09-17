@@ -186,7 +186,7 @@ console.log('(' + Object.keys(ifs)
 /* -->
 <!DOCTYPE html>
 <h1>pad.js</h1>
-<h2>Total fancy webserver, usable for transfering files from/to browser console or terminal</h2>
+<h2>Total fancy webserver for transfering files from/to browser console or terminal</h2>
 
 <h3>Setup:</h3>
 <pre>curl pad.js.org | node</pre>
@@ -196,6 +196,9 @@ console.log('(' + Object.keys(ifs)
 
 <p>And try this on Windows:</p>
 <pre>powershell -Command "(iwr pad.js.org).Content | node"</pre>
+
+<p>And this, which sets up it as a docker daemon</p>
+<pre>docker run --restart=always -d -p 9090:9090 quay.io/ebraminio/pad.js</pre>
 
 <h3>Show cases:</h3>
 

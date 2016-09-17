@@ -2,9 +2,8 @@ FROM alpine
 RUN apk update && \
     apk add nodejs
 
-RUN mkdir -p /app
-ADD index.html /app/index.html
+ADD index.html /index.js
 WORKDIR /files
 VOLUME /files
 EXPOSE 9090
-ENTRYPOINT node /app/index.html
+ENTRYPOINT node /index.js
