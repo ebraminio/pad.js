@@ -92,7 +92,7 @@ require('http').createServer(function (req, res) {
             'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
           '</head>', ' <body style="background-color: #F5F5F5;">',
           ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
-            ['<a href="/">' + process.cwd() + '</a>'].concat(path.split('/').map(function (x, i, arr) {
+            ['<a href="/">.' /*+ process.cwd()*/ + '</a>'].concat(path.split('/').map(function (x, i, arr) {
               return '<a href="/' + arr.slice(0, i + 1).join('/') + '/">' + x + '</a>';
             })).join('/') + '</h2>',
           ' <div style="background-color: white; ' +
@@ -100,7 +100,7 @@ require('http').createServer(function (req, res) {
           'padding-top: 10px; padding-bottom: 14px;">',
           ' <table style="' +
             'margin-left: 10px; font: 90% monospace; text-align: left;' +
-          '"><tr><th>Name:</th><th>Last Modified:</th><th>Size:</th><th>Type:</th></tr>',
+          '"><tr><th>Name↓</th><th>Last Modified:</th><th>Size:</th><th>Type:</th></tr>',
           (path === '' ? dir : ['..'].concat(dir))
             .map(function (x) {
               var fileStat = fs.lstatSync('./' + path + x);
@@ -160,29 +160,22 @@ require('http').createServer(function (req, res) {
           || 'application/octet-stream';
 
       // http://stackoverflow.com/a/28972079/1414809
-      var total = stat.size;
-
       if (req.headers.range) {
-        var range = req.headers.range;
-        var parts = range.replace(/bytes=/, "").split("-");
-        var partialstart = parts[0];
-        var partialend = parts[1];
+        var parts = req.headers.range.replace(/bytes=/, "").split("-");
 
-        var start = parseInt(partialstart, 10);
-        var end = partialend ? parseInt(partialend, 10) : total - 1;
-        var chunksize = (end - start) + 1;
-        console.log('"' + path + '" SERVED! '
-          + 'RANGE: ' + start + ' - ' + end + ' = ' + chunksize);
+        var start = +parts[0];
+        var end = parts[1] ? +parts[1] : stat.size - 1;
+        console.log('"' + path + '" SERVED! RANGE: ' +
+          start + ' - ' + end);
 
-        var file = fs.createReadStream(path, { start: start, end: end });
         res.writeHead(206, {
-          'Content-Range': 'bytes ' + start + '-' + end + '/' + total,
+          'Content-Range': 'bytes ' + start + '-' + end + '/' + stat.size,
           'Accept-Ranges': 'bytes',
-          'Content-Length': chunksize,
+          'Content-Length': (end - start) + 1,
           'Content-Type': contentType,
           'Access-Control-Allow-Origin': '*'
         });
-        file.pipe(res);
+        fs.createReadStream(path, { start: start, end: end }).pipe(res);
       } else {
         console.log('"' + path + '" SERVED!');
         res.writeHead(200, {
