@@ -35,7 +35,7 @@ var port = process.argv[2] || 9090;
 
 require('http').createServer(function (req, res) {
   // wipe all ., .., and directory separator inside file name
-  var fileName = decodeURI(req.url.replace(/[\/\\]/g, '').replace(/^\.+/g, ''));
+  var fileName = decodeURI(req.url.replace(/^[\/\\]/g, '').replace(/\.\./g, ''));
   if (req.method === 'POST') {
     // aggregate received chunks of file
     var sb = [];
@@ -62,115 +62,120 @@ require('http').createServer(function (req, res) {
         }
       });
     });
-
-  } else if (fileName === '') {
-
-    fs.readdir('.', function (err, dir) {
-      res.end(['<!DOCTYPE html>', '<html>', '<head>',
-        ' <meta charset="utf-8">',
-        ' <link rel="icon" href="data:,">',
-        ' <style>td { padding: 0 2em 0 0; } ' +
-          'td:nth-child(3), th:nth-child(3) { text-align: right; } ' +
-          'th { padding: 0 2em 3px 0; }</style>',
-        '</head>', ' <body style="background-color: #F5F5F5;">',
-        ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
-          process.cwd() + '</h2>',
-        ' <div style="background-color: white; ' +
-        'border-top: 1px solid #646464; border-bottom: 1px solid #646464;' +
-        'padding-top: 10px; padding-bottom: 14px;">',
-        ' <table style="' +
-          'margin-left: 10px; font: 90% monospace; text-align: left;' +
-        '"><tr><th>Name</th><th>Last Modified</th><th>Size</th></tr>',
-        dir
-          // no hidden files
-          .filter(function (x) { return x.indexOf('.') !== 0; })
-          // no directories
-          .map(function (x) { return [x, fs.statSync(x)]; })
-          .filter(function (x) { return x[1].isFile(); })
-          .map(function (x) {
-            return '  <tr>\n   <td>' +
-              '<a href="' + x[0] + '">' + x[0] +
-              '</a></td>\n   <td>' +
-              x[1].mtime.toString().split('(')[0] +
-              '</td>\n   <td>' +
-              fileSizeSI(x[1].size) + '</td>\n  </tr>';
-          }).join('\n'),
-        ' </table>', ' </div>', ' <div style="' +
-        'font: 90% monospace; color: #787878; padding-top: 4px;' +
-        '">pad.js.org, supports drag and drop upload, your IP is: ' +
-          req.connection.remoteAddress + ' ' +
-          (req.headers['x-forwarded-for'] || '') + '</div>', ' <script>',
-        'function stopEvent(e) { e.stopPropagation(); e.preventDefault(); }',
-        'document.addEventListener("dragleave", stopEvent, false);',
-        'document.addEventListener("dragover", stopEvent, false);',
-        'document.addEventListener("drop", function (e) {',
-        '  stopEvent(e);',
-        '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
-          'width: 100%; height: 100%; opacity: .9; position: absolute; ' +
-          'background-color: white; text-align: center; padding-top: 10em;' +
-          '\'>Uploading&hellip;</pre>";',
-        '  var file = e.dataTransfer.files[0], reader = new FileReader();',
-        '  reader.addEventListener("load", function () {',
-        '    fetch(encodeURIComponent(file.name), { method: "post", ' +
-                 'body: reader.result.replace(/^[^,]*?,/, "") })',
-        '      .then(function (x) { return x.text(); }).catch(alert)',
-        '      .then(function (x) { x === "Done" || alert(x); location.reload(); });',
-        '  }, false);',
-        '  reader.readAsDataURL(file);',
-        '});',
-        ' </script>', '</body>', '</html>'
-      ].join('\n'));
-    });
-
-  } else {
-
-    var contentType =
-      contentTypes[path.extname('./' + fileName).replace(/^./, '')]
-        || 'application/octet-stream';
-
-    fs.exists(fileName, function (exists) {
-      if (exists) {
-        // http://stackoverflow.com/a/28972079/1414809
-        var stat = fs.statSync(fileName);
-        var total = stat.size;
-
-        if (req.headers.range) {
-          var range = req.headers.range;
-          var parts = range.replace(/bytes=/, "").split("-");
-          var partialstart = parts[0];
-          var partialend = parts[1];
-
-          var start = parseInt(partialstart, 10);
-          var end = partialend ? parseInt(partialend, 10) : total - 1;
-          var chunksize = (end - start) + 1;
-          console.log('"' + fileName + '" SERVED! '
-            + 'RANGE: ' + start + ' - ' + end + ' = ' + chunksize);
-
-          var file = fs.createReadStream(fileName, { start: start, end: end });
-          res.writeHead(206, {
-            'Content-Range': 'bytes ' + start + '-' + end + '/' + total,
-            'Accept-Ranges': 'bytes',
-            'Content-Length': chunksize,
-            'Content-Type': contentType,
-            'Access-Control-Allow-Origin': '*'
-          });
-          file.pipe(res);
-        } else {
-          console.log('"' + fileName + '" SERVED!');
-          res.writeHead(200, {
-            'Content-Length': total,
-            'Content-Type': contentType,
-            'Access-Control-Allow-Origin': '*'
-          });
-          fs.createReadStream(fileName).pipe(res);
-        }
-      } else {
-        console.log('"' + fileName + '" was requested but not found.');
-        res.writeHead(404);
-        res.end('HTTP 404 File not found');
-      }
-    });
+    return;
   }
+  fs.lstat('./' + fileName, function (err, stat) {
+    if (err) {
+      console.log('"' + fileName + '" was requested but not found.');
+      res.writeHead(404);
+      res.end('HTTP 404 File not found');
+    }
+
+    if (stat.isDirectory()) {
+      fileName = fileName.replace(/([^\/])$/, '$1/');
+      var folder = process.cwd() + '/' + fileName;
+
+      fs.readdir(folder, function (err, dir) {
+        res.end(['<!DOCTYPE html>', '<html>', '<head>',
+          ' <meta charset="utf-8">',
+          ' <link rel="icon" href="data:,">',
+          ' <style>td { padding: 0 2em 0 0; } ' +
+            'td:nth-child(3), th:nth-child(3) { text-align: right; } ' +
+            'th { padding: 0 2em 3px 0; } ' +
+            'a, a:active { text-decoration: none; } ' +
+            'a:visited { color: #48468F; } ' +
+            'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
+          '</head>', ' <body style="background-color: #F5F5F5;">',
+          ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
+            folder + '</h2>',
+          ' <div style="background-color: white; ' +
+          'border-top: 1px solid #646464; border-bottom: 1px solid #646464;' +
+          'padding-top: 10px; padding-bottom: 14px;">',
+          ' <table style="' +
+            'margin-left: 10px; font: 90% monospace; text-align: left;' +
+          '"><tr><th>Name:</th><th>Last Modified:</th><th>Size:</th><th>Type:</th></tr>',
+          ['..'].concat(dir)
+            .map(function (x) {
+              if (x === '..' && fileName === '') return '';
+              var fileStat = fs.lstatSync(folder + x);
+              return '  <tr>\n   <td>' +
+                '<a href="' + fileName + x + '">' + (x === '..' ? 'Parent Directory' : x) +
+                '</a></td>\n   <td>' +
+                fileStat.mtime.toString().split('(')[0] +
+                '</td>\n   <td>' +
+                (fileStat.isDirectory() ? '-' : fileSizeSI(fileStat.size)) + '</td>' +
+                '<td>' + (fileStat.isDirectory() ? 'Directory'
+                  : contentTypes[path.extname(folder + x).replace(/^./, '')] || '') +
+                '</td>\n  </tr>';
+            }).join('\n'),
+          ' </table>', ' </div>', ' <div style="' +
+          'font: 90% monospace; color: #787878; padding-top: 4px;' +
+          '">pad.js.org, supports drag and drop upload, your IP is: ' +
+            req.connection.remoteAddress + ' ' +
+            (req.headers['x-forwarded-for'] || '') + '</div>', ' <script>',
+          'function stopEvent(e) { e.stopPropagation(); e.preventDefault(); }',
+          'document.addEventListener("dragleave", stopEvent, false);',
+          'document.addEventListener("dragover", stopEvent, false);',
+          'document.addEventListener("drop", function (e) {',
+          '  stopEvent(e);',
+          '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
+            'width: 100%; height: 100%; opacity: .9; position: absolute; ' +
+            'background-color: white; text-align: center; padding-top: 10em;' +
+            '\'>Uploading&hellip;</pre>";',
+          '  var file = e.dataTransfer.files[0], reader = new FileReader();',
+          '  reader.addEventListener("load", function () {',
+          '    fetch("' + fileName + '" + encodeURIComponent(file.name), { method: "post", ' +
+                   'body: reader.result.replace(/^[^,]*?,/, "") })',
+          '      .then(function (x) { return x.text(); }).catch(alert)',
+          '      .then(function (x) { x === "Done" || alert(x); location.reload(); });',
+          '  }, false);',
+          '  reader.readAsDataURL(file);',
+          '});',
+          ' </script>', '</body>', '</html>'
+        ].join('\n'));
+      });
+
+    } else {
+
+      var contentType =
+        contentTypes[path.extname('./' + fileName).replace(/^./, '')]
+          || 'application/octet-stream';
+
+      // http://stackoverflow.com/a/28972079/1414809
+      var total = stat.size;
+
+      if (req.headers.range) {
+        var range = req.headers.range;
+        var parts = range.replace(/bytes=/, "").split("-");
+        var partialstart = parts[0];
+        var partialend = parts[1];
+
+        var start = parseInt(partialstart, 10);
+        var end = partialend ? parseInt(partialend, 10) : total - 1;
+        var chunksize = (end - start) + 1;
+        console.log('"' + fileName + '" SERVED! '
+          + 'RANGE: ' + start + ' - ' + end + ' = ' + chunksize);
+
+        var file = fs.createReadStream(fileName, { start: start, end: end });
+        res.writeHead(206, {
+          'Content-Range': 'bytes ' + start + '-' + end + '/' + total,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': chunksize,
+          'Content-Type': contentType,
+          'Access-Control-Allow-Origin': '*'
+        });
+        file.pipe(res);
+      } else {
+        console.log('"' + fileName + '" SERVED!');
+        res.writeHead(200, {
+          'Content-Length': total,
+          'Content-Type': contentType,
+          'Access-Control-Allow-Origin': '*'
+        });
+        fs.createReadStream(fileName).pipe(res);
+      }
+    }
+  });
 }).listen(port, '0.0.0.0');
 
 console.log('pad.js is listening on ' + port + ' port of all network interfaces');
@@ -181,7 +186,7 @@ console.log('(' + Object.keys(ifs)
     return [x, ifs[x].filter(function (x) { return x.family === 'IPv4'; })[0]];
   })
   .filter(function (x) { return x[1]; })
-  .map(function (x) { return x[0] + ': http://' + x[1].address + ':9090'; })
+  .map(function (x) { return x[0] + ': http://' + x[1].address + ':' + port; })
   .join(', ') + ')');
 /* -->
 <!DOCTYPE html>
