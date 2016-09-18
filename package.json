@@ -1,6 +1,6 @@
 {
   "name": "pad.js",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Total fancy webserver for transfering files from/to browser console or terminal",
   "main": "index.html",
   "scripts": {

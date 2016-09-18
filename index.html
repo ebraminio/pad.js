@@ -69,9 +69,12 @@ require('http').createServer(function (req, res) {
       console.log('"' + fileName + '" was requested but not found.');
       res.writeHead(404);
       res.end('HTTP 404 File not found');
-    }
+    } else if (stat.isSymbolicLink()) {
+      console.log('"' + fileName + '" a symlink was requested but got denied.');
+      res.writeHead(403);
+      res.end('HTTP 403 Serving symlink is forbidden, at least for now');
+    } else if (stat.isDirectory()) {
 
-    if (stat.isDirectory()) {
       fileName = fileName.replace(/([^\/])$/, '$1/');
       var folder = process.cwd() + '/' + fileName;
 
@@ -94,18 +97,30 @@ require('http').createServer(function (req, res) {
           ' <table style="' +
             'margin-left: 10px; font: 90% monospace; text-align: left;' +
           '"><tr><th>Name:</th><th>Last Modified:</th><th>Size:</th><th>Type:</th></tr>',
-          ['..'].concat(dir)
+          (fileName === '' ? dir : ['..'].concat(dir))
             .map(function (x) {
-              if (x === '..' && fileName === '') return '';
               var fileStat = fs.lstatSync(folder + x);
+              var ext = path.extname(folder + x).replace(/^./, '');
+              return {
+                name: x.toString(),
+                ext: ext,
+                size: fileStat.size,
+                date: fileStat.mtime.toString().split('(')[0],
+                isDir: fileStat.isDirectory()
+              };
+            })
+            .sort(function (x, y) {
+              return x.isDir !== y.isDir
+                ? (x.isDir < y.isDir ? 1 : -1)
+                : x.name.localeCompare(y.name);
+            })
+            .map(function (x) {
               return '  <tr>\n   <td>' +
-                '<a href="' + fileName + x + '">' + (x === '..' ? 'Parent Directory' : x) +
-                '</a></td>\n   <td>' +
-                fileStat.mtime.toString().split('(')[0] +
-                '</td>\n   <td>' +
-                (fileStat.isDirectory() ? '-' : fileSizeSI(fileStat.size)) + '</td>' +
-                '<td>' + (fileStat.isDirectory() ? 'Directory'
-                  : contentTypes[path.extname(folder + x).replace(/^./, '')] || '') +
+                '<a href="/' + fileName + x.name + '">' +
+                (x.name === '..' ? 'Parent Directory' : x.name) +
+                '</a></td>\n   <td>' + x.date + '</td>\n   <td>' +
+                (x.isDir ? '-' : fileSizeSI(x.size)) + '</td>' +
+                '<td>' + (x.isDir ? 'Directory' : contentTypes[x.ext] || '') +
                 '</td>\n  </tr>';
             }).join('\n'),
           ' </table>', ' </div>', ' <div style="' +
