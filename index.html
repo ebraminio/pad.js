@@ -197,8 +197,12 @@ console.log('(' + Object.keys(ifs)
 <p>And try this on Windows:</p>
 <pre>powershell -Command "(iwr pad.js.org).Content | node"</pre>
 
-<p>This sets it up as a Docker daemon:</p>
+<p>Or this sets it up as a Docker daemon:</p>
 <pre>docker run --restart=always -v /files:/files --name pad.js -d -p 9090:9090 quay.io/ebraminio/pad.js</pre>
+
+<p>Or this which installs it as runnable binary via npm:</p>
+<pre>npm install -g pad.js
+pad [PORT]</pre>
 
 <h3>Show cases:</h3>
 

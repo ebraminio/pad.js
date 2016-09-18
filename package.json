@@ -1,0 +1,29 @@
+{
+  "name": "pad.js",
+  "version": "0.5.2",
+  "description": "Total fancy webserver for transfering files from/to browser console or terminal",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ebraminio/pad.js.git"
+  },
+  "keywords": [
+    "webserver",
+    "cli",
+    "commandline",
+    "uploadserver"
+  ],
+  "author": "Ebrahim Byagowi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ebraminio/pad.js/issues"
+  },
+  "homepage": "https://github.com/ebraminio/pad.js#readme",
+  "bin": {
+    "pad.js": "./pad-cli",
+    "pad": "./pad-cli"
+  }
+}
