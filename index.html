@@ -1,7 +1,6 @@
 <!--
 'use strict';
 var fs = require('fs');
-var path = require('path');
 var os = require('os');
 
 // http://stackoverflow.com/a/38897674/1414809
@@ -35,7 +34,7 @@ var port = process.argv[2] || 9090;
 
 require('http').createServer(function (req, res) {
   // wipe all ., .., and directory separator inside file name
-  var fileName = decodeURI(req.url.replace(/^[\/\\]/g, '').replace(/\.\./g, ''));
+  var path = decodeURI(req.url.replace(/^[\/\\]/g, '').replace(/\.\./g, ''));
   if (req.method === 'POST') {
     // aggregate received chunks of file
     var sb = [];
@@ -47,7 +46,7 @@ require('http').createServer(function (req, res) {
       var data = sb.join('');
       var buffer = new Buffer(data, 'base64');
 
-      fs.writeFile(fileName, buffer, { flag: 'wx' }, function (err) {
+      fs.writeFile(path, buffer, { flag: 'wx' }, function (err) {
         if (err) {
           console.log(err.message);
           res.writeHead(409);
@@ -58,27 +57,30 @@ require('http').createServer(function (req, res) {
             'Access-Control-Allow-Origin': '*'
           });
           res.end('Done');
-          console.log('"' + fileName + '" SAVED!');
+          console.log('"' + path + '" SAVED!');
         }
       });
     });
     return;
   }
-  fs.lstat('./' + fileName, function (err, stat) {
+  fs.lstat('./' + path, function (err, stat) {
     if (err) {
-      console.log('"' + fileName + '" was requested but not found.');
+      console.log('"' + path + '" was requested but not found.');
       res.writeHead(404);
       res.end('HTTP 404 File not found');
     } else if (stat.isSymbolicLink()) {
-      console.log('"' + fileName + '" a symlink was requested but got denied.');
+      console.log('"' + path + '" a symlink was requested but got denied.');
       res.writeHead(403);
       res.end('HTTP 403 Serving symlink is forbidden, at least for now');
     } else if (stat.isDirectory()) {
 
-      fileName = fileName.replace(/([^\/])$/, '$1/');
-      var folder = process.cwd() + '/' + fileName;
+      if (!req.url.match(/\/$/)) {
+        res.writeHead(302, { 'Location': req.url + '/' });
+        res.end();
+        return;
+      }
 
-      fs.readdir(folder, function (err, dir) {
+      fs.readdir('./' + path, function (err, dir) {
         res.end(['<!DOCTYPE html>', '<html>', '<head>',
           ' <meta charset="utf-8">',
           ' <link rel="icon" href="data:,">',
@@ -90,7 +92,7 @@ require('http').createServer(function (req, res) {
             'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
           '</head>', ' <body style="background-color: #F5F5F5;">',
           ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
-            ['<a href="/">' + process.cwd() + '</a>'].concat(fileName.split('/').map(function (x, i, arr) {
+            ['<a href="/">' + process.cwd() + '</a>'].concat(path.split('/').map(function (x, i, arr) {
               return '<a href="/' + arr.slice(0, i + 1).join('/') + '/">' + x + '</a>';
             })).join('/') + '</h2>',
           ' <div style="background-color: white; ' +
@@ -99,10 +101,10 @@ require('http').createServer(function (req, res) {
           ' <table style="' +
             'margin-left: 10px; font: 90% monospace; text-align: left;' +
           '"><tr><th>Name:</th><th>Last Modified:</th><th>Size:</th><th>Type:</th></tr>',
-          (fileName === '' ? dir : ['..'].concat(dir))
+          (path === '' ? dir : ['..'].concat(dir))
             .map(function (x) {
-              var fileStat = fs.lstatSync(folder + x);
-              var ext = path.extname(folder + x).replace(/^./, '');
+              var fileStat = fs.lstatSync('./' + path + x);
+              var ext = x.replace(/^.*\.(.*)$/, "$1");
               return {
                 name: x.toString(),
                 ext: ext,
@@ -118,7 +120,7 @@ require('http').createServer(function (req, res) {
             })
             .map(function (x) {
               return '  <tr>\n   <td>' +
-                '<a href="/' + fileName + x.name + (x.isDir ? '/' : '') + '">' +
+                '<a href="/' + path + x.name + (x.isDir ? '/' : '') + '">' +
                 (x.name === '..' ? 'Parent Directory' : x.name) +
                 '</a></td>\n   <td>' + x.date + '</td>\n   <td>' +
                 (x.isDir ? '-' : fileSizeSI(x.size)) + '</td>' +
@@ -141,7 +143,7 @@ require('http').createServer(function (req, res) {
             '\'>Uploading&hellip;</pre>";',
           '  var file = e.dataTransfer.files[0], reader = new FileReader();',
           '  reader.addEventListener("load", function () {',
-          '    fetch("' + fileName + '" + encodeURIComponent(file.name), { method: "post", ' +
+          '    fetch(encodeURIComponent(file.name), { method: "post", ' +
                    'body: reader.result.replace(/^[^,]*?,/, "") })',
           '      .then(function (x) { return x.text(); }).catch(alert)',
           '      .then(function (x) { x === "Done" || alert(x); location.reload(); });',
@@ -154,8 +156,7 @@ require('http').createServer(function (req, res) {
 
     } else {
 
-      var contentType =
-        contentTypes[path.extname('./' + fileName).replace(/^./, '')]
+      var contentType = contentTypes[path.replace(/^.*\.(.*)$/, "$1")]
           || 'application/octet-stream';
 
       // http://stackoverflow.com/a/28972079/1414809
@@ -170,10 +171,10 @@ require('http').createServer(function (req, res) {
         var start = parseInt(partialstart, 10);
         var end = partialend ? parseInt(partialend, 10) : total - 1;
         var chunksize = (end - start) + 1;
-        console.log('"' + fileName + '" SERVED! '
+        console.log('"' + path + '" SERVED! '
           + 'RANGE: ' + start + ' - ' + end + ' = ' + chunksize);
 
-        var file = fs.createReadStream(fileName, { start: start, end: end });
+        var file = fs.createReadStream(path, { start: start, end: end });
         res.writeHead(206, {
           'Content-Range': 'bytes ' + start + '-' + end + '/' + total,
           'Accept-Ranges': 'bytes',
@@ -183,13 +184,13 @@ require('http').createServer(function (req, res) {
         });
         file.pipe(res);
       } else {
-        console.log('"' + fileName + '" SERVED!');
+        console.log('"' + path + '" SERVED!');
         res.writeHead(200, {
           'Content-Length': total,
           'Content-Type': contentType,
           'Access-Control-Allow-Origin': '*'
         });
-        fs.createReadStream(fileName).pipe(res);
+        fs.createReadStream(path).pipe(res);
       }
     }
   });
