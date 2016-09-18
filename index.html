@@ -92,7 +92,7 @@ require('http').createServer(function (req, res) {
             'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
           '</head>', ' <body style="background-color: #F5F5F5;">',
           ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
-            ['<a href="/">.' /*+ process.cwd()*/ + '</a>'].concat(path.split('/').map(function (x, i, arr) {
+            ['<a href="/">.</a>'].concat(path.split('/').map(function (x, i, arr) {
               return '<a href="/' + arr.slice(0, i + 1).join('/') + '/">' + x + '</a>';
             })).join('/') + '</h2>',
           ' <div style="background-color: white; ' +
