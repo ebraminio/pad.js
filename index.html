@@ -90,7 +90,9 @@ require('http').createServer(function (req, res) {
             'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
           '</head>', ' <body style="background-color: #F5F5F5;">',
           ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
-            folder + '</h2>',
+            ['<a href="/">' + process.cwd() + '</a>'].concat(fileName.split('/').map(function (x, i, arr) {
+              return '<a href="/' + arr.slice(0, i + 1).join('/') + '/">' + x + '</a>';
+            })).join('/') + '</h2>',
           ' <div style="background-color: white; ' +
           'border-top: 1px solid #646464; border-bottom: 1px solid #646464;' +
           'padding-top: 10px; padding-bottom: 14px;">',
@@ -116,7 +118,7 @@ require('http').createServer(function (req, res) {
             })
             .map(function (x) {
               return '  <tr>\n   <td>' +
-                '<a href="/' + fileName + x.name + '">' +
+                '<a href="/' + fileName + x.name + (x.isDir ? '/' : '') + '">' +
                 (x.name === '..' ? 'Parent Directory' : x.name) +
                 '</a></td>\n   <td>' + x.date + '</td>\n   <td>' +
                 (x.isDir ? '-' : fileSizeSI(x.size)) + '</td>' +
