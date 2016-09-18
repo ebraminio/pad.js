@@ -91,6 +91,7 @@ require('http').createServer(function (req, res) {
             'a:visited { color: #48468F; } ' +
             'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
           '</head>', ' <body style="background-color: #F5F5F5;">',
+          ' <input type="file" onchange="upload(this.files[0])" style="float: right"/>',
           ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
             ['<a href="/">.</a>'].concat(path.split('/').map(function (x, i, arr) {
               return '<a href="/' + arr.slice(0, i + 1).join('/') + '/">' + x + '</a>';
@@ -141,7 +142,10 @@ require('http').createServer(function (req, res) {
             'width: 100%; height: 100%; opacity: .9; position: absolute; ' +
             'background-color: white; text-align: center; padding-top: 10em;' +
             '\'>Uploading&hellip;</pre>";',
-          '  var file = e.dataTransfer.files[0], reader = new FileReader();',
+          '  upload(e.dataTransfer.files[0]);',
+          '});',
+          'function upload(file) {',
+          '  var reader = new FileReader();',
           '  reader.addEventListener("load", function () {',
           '    fetch(encodeURIComponent(file.name), { method: "post", ' +
                    'body: reader.result.replace(/^[^,]*?,/, "") })',
@@ -149,7 +153,7 @@ require('http').createServer(function (req, res) {
           '      .then(function (x) { x === "Done" || alert(x); location.reload(); });',
           '  }, false);',
           '  reader.readAsDataURL(file);',
-          '});',
+          '}',
           ' </script>', '</body>', '</html>'
         ].join('\n'));
       });
@@ -179,7 +183,7 @@ require('http').createServer(function (req, res) {
       } else {
         console.log('"' + path + '" SERVED!');
         res.writeHead(200, {
-          'Content-Length': total,
+          'Content-Length': stat.size,
           'Content-Type': contentType,
           'Access-Control-Allow-Origin': '*'
         });
