@@ -101,7 +101,10 @@ require('http').createServer(function (req, res) {
           'padding-top: 10px; padding-bottom: 14px;">',
           ' <table style="' +
             'margin-left: 10px; font: 90% monospace; text-align: left;' +
-          '"><tr><th>Name↓</th><th>Last Modified:</th><th>Size:</th><th>Type:</th></tr>',
+          '"><thead><tr><th onclick="sort(1)">Name↓</th>' +
+          '<th onclick="sort(2)">Last Modified:</th>' +
+          '<th onclick="sort(3)">Size:</th>' +
+          '<th onclick="sort(4)">Type:</th></tr></thead><tbody>',
           (path === '' ? dir : ['..'].concat(dir))
             .map(function (x) {
               var fileStat = fs.lstatSync('./' + path + x);
@@ -117,7 +120,7 @@ require('http').createServer(function (req, res) {
             .sort(function (x, y) {
               return x.isDir !== y.isDir
                 ? (x.isDir < y.isDir ? 1 : -1)
-                : x.name.localeCompare(y.name);
+                : (x.name > y.name ? 1 : -1);
             })
             .map(function (x) {
               return '  <tr>\n   <td>' +
@@ -128,7 +131,7 @@ require('http').createServer(function (req, res) {
                 '<td>' + (x.isDir ? 'Directory' : contentTypes[x.ext] || '') +
                 '</td>\n  </tr>';
             }).join('\n'),
-          ' </table>', ' </div>', ' <div style="' +
+          ' </tbody></table>', ' </div>', ' <div style="' +
           'font: 90% monospace; color: #787878; padding-top: 4px;' +
           '">pad.js.org, supports drag and drop upload, your IP is: ' +
             req.connection.remoteAddress + ' ' +
@@ -153,6 +156,26 @@ require('http').createServer(function (req, res) {
           '      .then(function (x) { x === "Done" || alert(x); location.reload(); });',
           '  }, false);',
           '  reader.readAsDataURL(file);',
+          '}',
+          'var sortState = 1;',
+          'function sort(ord) {',
+          '  sortState = ord === sortState ? -ord : ord;',
+          '  var tbody = document.getElementsByTagName("tbody")[0];',
+          '  var trs = Array.prototype.slice.call(tbody.getElementsByTagName("tr"));',
+          '  trs.forEach(tbody.removeChild.bind(tbody));',
+          '  trs.sort(function (x, y) {',
+          '    x = x.getElementsByTagName("td");',
+          '    y = y.getElementsByTagName("td");',
+          '    var xDir = x[3].textContent === "Directory"',
+          '    var yDir = y[3].textContent === "Directory"',
+          '    return xDir !== yDir',
+          '      ? (xDir < yDir ? 1 : -1)',
+          '      : x[ord - 1].textContent > y[ord - 1].textContent ? 1 * sortState : -1 * sortState;',
+          '  }).forEach(tbody.appendChild.bind(tbody));',
+          '  Array.prototype.slice.call(document.getElementsByTagName("th")).forEach(function (x, i) {',
+          '    x.textContent = x.textContent.replace(/.$/, i + 1 === ord',
+          '      ? (sortState < 0 ? "↑" : "↓") : ":");',
+          '  });',
           '}',
           ' </script>', '</body>', '</html>'
         ].join('\n'));
