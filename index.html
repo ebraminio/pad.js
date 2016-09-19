@@ -124,9 +124,10 @@ require('http').createServer(function (req, res) {
             })
             .map(function (x) {
               return '  <tr>\n   <td>' +
-                '<a href="/' + path + x.name + (x.isDir ? '/' : '') + '">' +
+                '<a href="' + x.name + (x.isDir ? '/' : '') + '">' +
                 (x.name === '..' ? 'Parent Directory' : x.name) +
-                '</a></td>\n   <td>' + x.date + '</td>\n   <td>' +
+                '</a></td>\n   <td title="' + new Date(x.date).getTime() +
+                '">' + x.date + '</td>\n   <td title="' + x.size + '">' +
                 (x.isDir ? '-' : fileSizeSI(x.size)) + '</td>' +
                 '<td>' + (x.isDir ? 'Directory' : contentTypes[x.ext] || '') +
                 '</td>\n  </tr>';
@@ -160,20 +161,23 @@ require('http').createServer(function (req, res) {
           'var sortState = 1;',
           'function sort(ord) {',
           '  sortState = ord === sortState ? -ord : ord;',
-          '  var tbody = document.getElementsByTagName("tbody")[0];',
-          '  var trs = Array.prototype.slice.call(tbody.getElementsByTagName("tr"));',
-          '  trs.forEach(tbody.removeChild.bind(tbody));',
-          '  trs.sort(function (x, y) {',
-          '    x = x.getElementsByTagName("td");',
-          '    y = y.getElementsByTagName("td");',
-          '    var xDir = x[3].textContent === "Directory"',
-          '    var yDir = y[3].textContent === "Directory"',
-          '    return xDir !== yDir',
-          '      ? (xDir < yDir ? 1 : -1)',
-          '      : x[ord - 1].textContent > y[ord - 1].textContent ? 1 * sortState : -1 * sortState;',
-          '  }).forEach(tbody.appendChild.bind(tbody));',
+          '  var p = document.getElementsByTagName("tbody")[0];',
+          '  Array.prototype.slice.call(p.getElementsByTagName("tr"))',
+          '    .map(p.removeChild.bind(p))',
+          '    .sort(function (x, y) {',
+          '      x = x.getElementsByTagName("td");',
+          '      y = y.getElementsByTagName("td");',
+          '      var xDir = x[3].textContent === "Directory";',
+          '      var yDir = y[3].textContent === "Directory";',
+          '      if (xDir !== yDir) return xDir < yDir ? 1 : -1;',
+          '      if (x[0].textContent === "Parent Directory") return -1;',
+          '      if (y[0].textContent === "Parent Directory") return 1;',
+          '      if (ord === 2 || ord === 3)',
+          '        return +x[ord - 1].title > +y[ord - 1].title ? sortState : -sortState;',
+          '      return x[ord - 1].textContent > y[ord - 1].textContent ? sortState : -sortState;',
+          '    }).forEach(p.appendChild.bind(p));',
           '  Array.prototype.slice.call(document.getElementsByTagName("th")).forEach(function (x, i) {',
-          '    x.textContent = x.textContent.replace(/.$/, i + 1 === ord',
+          '    x.textContent = x.textContent.replace(/.$/, i === ord - 1',
           '      ? (sortState < 0 ? "↑" : "↓") : ":");',
           '  });',
           '}',
