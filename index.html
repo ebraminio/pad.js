@@ -33,8 +33,7 @@ var contentTypes = {
 var port = process.argv[2] || 9090;
 
 require('http').createServer(function (req, res) {
-  // wipe all ., .., and directory separator inside file name
-  var path = decodeURI(req.url.replace(/^[\/\\]/g, '').replace(/\.\./g, ''));
+  var path = decodeURI(req.url.replace(/^[\/\\]+/g, '').replace(/\.\./g, ''));
   if (req.method === 'POST') {
     // aggregate received chunks of file
     var sb = [];
@@ -91,11 +90,12 @@ require('http').createServer(function (req, res) {
             'a:visited { color: #48468F; } ' +
             'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
           '</head>', ' <body style="background-color: #F5F5F5;">',
-          ' <input type="file" onchange="upload(this.files[0])" style="float: right"/>',
+          ' <div style="float: right">Upload: ' +
+            '<input type="file" onchange="upload(this.files[0])"/></div>',
           ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
-            ['<a href="/">.</a>'].concat(path.split('/').map(function (x, i, arr) {
+            ['<a href="/">.</a>'].concat(path.split('/').slice(0, -1).map(function (x, i, arr) {
               return '<a href="/' + arr.slice(0, i + 1).join('/') + '/">' + x + '</a>';
-            })).join('/') + '</h2>',
+            })).join('/') + '/</h2>',
           ' <div style="background-color: white; ' +
           'border-top: 1px solid #646464; border-bottom: 1px solid #646464;' +
           'padding-top: 10px; padding-bottom: 14px;">',
@@ -104,7 +104,7 @@ require('http').createServer(function (req, res) {
           '"><thead><tr><th onclick="sort(1)">Name↓</th>' +
           '<th onclick="sort(2)">Last Modified:</th>' +
           '<th onclick="sort(3)">Size:</th>' +
-          '<th onclick="sort(4)">Type:</th></tr></thead><tbody>',
+          '<th onclick="sort(4)">Type:</th></tr></thead><tbody>' +
           (path === '' ? dir : ['..'].concat(dir))
             .map(function (x) {
               var fileStat = fs.lstatSync('./' + path + x);
@@ -131,8 +131,8 @@ require('http').createServer(function (req, res) {
                 (x.isDir ? '-' : fileSizeSI(x.size)) + '</td>' +
                 '<td>' + (x.isDir ? 'Directory' : contentTypes[x.ext] || '') +
                 '</td>\n  </tr>';
-            }).join('\n'),
-          ' </tbody></table>', ' </div>', ' <div style="' +
+            }).join('') + '</tbody></table>',
+          ' </div>', ' <div style="' +
           'font: 90% monospace; color: #787878; padding-top: 4px;' +
           '">pad.js.org, supports drag and drop upload, your IP is: ' +
             req.connection.remoteAddress + ' ' +
@@ -142,13 +142,13 @@ require('http').createServer(function (req, res) {
           'document.addEventListener("dragover", stopEvent, false);',
           'document.addEventListener("drop", function (e) {',
           '  stopEvent(e);',
+          '  upload(e.dataTransfer.files[0]);',
+          '});',
+          'function upload(file) {',
           '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
             'width: 100%; height: 100%; opacity: .9; position: absolute; ' +
             'background-color: white; text-align: center; padding-top: 10em;' +
             '\'>Uploading&hellip;</pre>";',
-          '  upload(e.dataTransfer.files[0]);',
-          '});',
-          'function upload(file) {',
           '  var reader = new FileReader();',
           '  reader.addEventListener("load", function () {',
           '    fetch(encodeURIComponent(file.name), { method: "post", ' +
@@ -162,7 +162,7 @@ require('http').createServer(function (req, res) {
           'function sort(ord) {',
           '  sortState = ord === sortState ? -ord : ord;',
           '  var p = document.getElementsByTagName("tbody")[0];',
-          '  Array.prototype.slice.call(p.getElementsByTagName("tr"))',
+          '  Array.prototype.slice.call(p.children)',
           '    .map(p.removeChild.bind(p))',
           '    .sort(function (x, y) {',
           '      x = x.getElementsByTagName("td");',
