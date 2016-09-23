@@ -277,7 +277,7 @@ console.log('(' + Object.keys(ifs)
 <p>Or this sets it up as a Docker daemon:</p>
 <pre>docker run --restart=always -v /files:/files --name pad.js -d -p 9090:9090 quay.io/ebraminio/pad.js</pre>
 
-<p>Use this if you want to have as a terminal tool:</p>
+<p>Use this if you want to have it as a terminal tool:</p>
 <pre>npm install -g pad.js
 pad [PORT]</pre>
 
@@ -314,5 +314,5 @@ fetch('http://127.0.0.1:9090/a.png', { method: 'post', body: png })
 
 <p><a href="https://github.com/ebraminio/pad.js">Source</a></p>
 
-<script>document.body.childNodes[0].remove(); // removes file shebang</script>
+<script>document.body.childNodes[0].remove(); // removes shebang</script>
 <!-- */
