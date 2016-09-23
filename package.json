@@ -1,6 +1,6 @@
 {
   "name": "pad.js",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "Total fancy webserver for transfering files from/to browser console or terminal",
   "main": "index.html",
   "repository": {
@@ -20,7 +20,7 @@
   },
   "homepage": "http://pad.js.org",
   "bin": {
-    "pad.js": "./index.html",
-    "pad": "./index.html"
+    "pad.js": "./pad-cli",
+    "pad": "./pad-cli"
   }
 }
