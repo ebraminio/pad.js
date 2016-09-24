@@ -1,11 +1,8 @@
 {
   "name": "pad.js",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Total fancy webserver for transfering files from/to browser console or terminal",
   "main": "index.html",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ebraminio/pad.js.git"
