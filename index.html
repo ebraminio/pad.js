@@ -192,7 +192,7 @@ require('http').createServer(function (req, res) {
           '  var p = document.getElementsByTagName("tbody")[0];',
           // http://stackoverflow.com/a/39569822
           '  Array.prototype.slice.call(p.children)',
-          '    .map(p.removeChild.bind(p))',
+          '    .map(function (x) { return p.removeChild(x); })',
           '    .sort(function (x, y) {',
           '      x = x.getElementsByTagName("td");',
           '      y = y.getElementsByTagName("td");',
@@ -204,7 +204,7 @@ require('http').createServer(function (req, res) {
           '      if (ord === 2 || ord === 3)',
           '        return +x[ord - 1].title > +y[ord - 1].title ? sortState : -sortState;',
           '      return x[ord - 1].textContent > y[ord - 1].textContent ? sortState : -sortState;',
-          '    }).forEach(p.appendChild.bind(p));',
+          '    }).forEach(function (x) { p.appendChild(x); });',
           '  Array.prototype.slice.call(document.getElementsByTagName("th")).forEach(function (x, i) {',
           '    x.textContent = x.textContent.replace(/.$/, i === ord - 1',
           '      ? (sortState < 0 ? "↑" : "↓") : ":");',

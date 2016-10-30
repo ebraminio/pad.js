@@ -1,9 +1,7 @@
 FROM alpine
-RUN apk update && \
-    apk add nodejs
-
+MAINTAINER Ebrahim Byagowi "<ebrahim@gnu.org>"
+RUN apk update && apk add nodejs
 ADD index.html /index.js
 WORKDIR /files
-VOLUME /files
-EXPOSE 9090
+EXPOSE 9090/tcp
 ENTRYPOINT node /index.js
