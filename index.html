@@ -42,7 +42,7 @@ var contentTypes = {
   xhtml: 'application/xhtml+xml', xspf: 'application/xspf+xml',
   zip: 'application/zip', bin: 'application/octet-stream',
   exe: 'application/octet-stream', dll: 'application/octet-stream',
-  deb: 'application/octet-stream', dmg: 'application/octet-stream',
+  deb: 'application/x-debian-package', dmg: 'application/octet-stream',
   iso: 'application/octet-stream', img: 'application/octet-stream',
   msi: 'application/octet-stream', msp: 'application/octet-stream',
   msm: 'application/octet-stream',
@@ -55,7 +55,8 @@ var contentTypes = {
   ts: 'video/mp2t', mp4: 'video/mp4', mpeg: 'video/mpeg', mpg: 'video/mpeg',
   mov: 'video/quicktime', webm: 'video/webm', flv: 'video/x-flv',
   m4v: 'video/x-m4v', mng: 'video/x-mng', asx: 'video/x-ms-asf', asf: 'video/x-ms-asf',
-  wmv: 'video/x-ms-wmv', avi: 'video/x-msvideo', mkv: 'video/webm'
+  wmv: 'video/x-ms-wmv', avi: 'video/x-msvideo', mkv: 'video/webm', mime: 'www/mime',
+  tar: 'application/x-tar', tgz: 'application/x-tar-gz', gz: 'application/x-gzip'
 }
 
 var port = process.argv[2] || 9090;
