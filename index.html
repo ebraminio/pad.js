@@ -119,7 +119,7 @@ require('http').createServer(function (req, res) {
             'a:visited { color: #48468F; } ' +
             'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
           '</head>', ' <body style="background-color: #F5F5F5;">',
-          ' <div style="float: right">Upload: ' +
+          ' <div style="float: right"><a onclick="noteSubmit()">📝</a> Upload: ' +
             '<input type="file" onchange="upload(this.files[0])"/></div>',
           ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
             ['<a href="/">.</a>'].concat(path.split('/').slice(0, -1).map(function (x, i, arr) {
@@ -163,16 +163,26 @@ require('http').createServer(function (req, res) {
             }).join('') + '</tbody></table>',
           ' </div>', ' <div style="' +
           'font: 90% monospace; color: #787878; padding-top: 4px;' +
-          '">pad.js.org, supports drag and drop upload, your IP is: ' +
+          '">pad.js.org, supports upload by drag and drop, and copy and paste, your IP is: ' +
             req.connection.remoteAddress + ' ' +
             (req.headers['x-forwarded-for'] || '') + '</div>', ' <script>',
+          '"use strict";',
           'function stopEvent(e) { e.stopPropagation(); e.preventDefault(); }',
           'document.addEventListener("dragleave", stopEvent, false);',
           'document.addEventListener("dragover", stopEvent, false);',
           'document.addEventListener("drop", function (e) {',
           '  stopEvent(e);',
-          '  upload(e.dataTransfer.files[0]);',
+          '  handleDataTransfer(e.dataTransfer);',
           '});',
+          'document.body.addEventListener("paste", function (e) {',
+          '  handleDataTransfer(e.clipboardData);',
+          '});',
+          'function handleDataTransfer(dataTransfer) {',
+          // TODO: Support multiple files upload
+          '  var item = (dataTransfer.items || dataTransfer.files)[0];',
+          '  if (item.kind === "file") upload(item.getAsFile());',
+          '  else item.getAsString(noteSubmit);',
+          '}',
           'function upload(file) {',
           '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
             'width: 100%; height: 100%; opacity: .9; position: absolute; ' +
@@ -180,12 +190,16 @@ require('http').createServer(function (req, res) {
             '\'>Uploading&hellip;</pre>";',
           '  var reader = new FileReader();',
           '  reader.addEventListener("load", function () {',
-          '    fetch(encodeURIComponent(file.name), { method: "post", ' +
+          '    var name = file.name || (Date.now() + "." + file.type.split("/")[1]);',
+          '    fetch(encodeURIComponent(name), { method: "post", ' +
                    'body: reader.result.replace(/^[^,]*?,/, "") })',
           '      .then(function (x) { return x.text(); }).catch(alert)',
           '      .then(function (x) { x === "Done" || alert(x); location.reload(); });',
           '  }, false);',
           '  reader.readAsDataURL(file);',
+          '}',
+          'function noteSubmit(text) {',
+          '  upload(new Blob([text || prompt("Enter a note:")], { type: "fakemime/txt" }));',
           '}',
           'var sortState = 1;',
           'function sort(ord) {',
@@ -219,6 +233,9 @@ require('http').createServer(function (req, res) {
 
       var contentType = contentTypes[path.replace(/^.*\.(.*)$/, "$1")]
           || 'application/octet-stream';
+
+      if (contentType === 'text/plain')
+        contentType = 'text/plain; charset=utf-8';
 
       // http://stackoverflow.com/a/28972079/1414809
       if (req.headers.range) {
