@@ -187,7 +187,7 @@ require('http').createServer(function (req, res) {
               'background-color: white; text-align: center; padding-top: 10em;' +
               '\'>Uploading&hellip;</pre>";',
           '',
-          '  if (dataTransfer.items && dataTransfer.items[0].kind === "string") {',
+          '  if (dataTransfer.items && dataTransfer.items[0] && dataTransfer.items[0].kind === "string") {',
           '    dataTransfer.items[0].getAsString(noteSubmit);',
           '    return;',
           '  }',
