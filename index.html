@@ -119,7 +119,7 @@ require('http').createServer(function (req, res) {
             'a:visited { color: #48468F; } ' +
             'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
           '</head>', ' <body style="background-color: #F5F5F5;">',
-          ' <div style="float: right"><a onclick="noteSubmit()">📝</a> Upload: ' +
+          ' <div style="float: right"><a onclick="noteSubmit()" href="#">📝</a> Upload: ' +
             '<input type="file" onchange="upload(this.files[0])"/></div>',
           ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
             ['<a href="/">.</a>'].concat(path.split('/').slice(0, -1).map(function (x, i, arr) {
