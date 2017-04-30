@@ -178,7 +178,9 @@ require('http').createServer(function (req, res) {
           '  handleDataTransfer(e.clipboardData);',
           '});',
           'function noteSubmit(text) {',
-          '  upload(new Blob([text || prompt("Enter a note:")], { type: "fakemime/txt" }))',
+          '  text = text || prompt("Enter a note:");',
+          '  if (!text) return;',
+          '  upload(new Blob([text], { type: "fakemime/txt" }))',
           '    .catch(alert).then(function () { location.reload(); });',
           '}',
           'function handleDataTransfer(dataTransfer) {',
@@ -194,8 +196,10 @@ require('http').createServer(function (req, res) {
           '  var files = (dataTransfer.items',
           '    ? Array.from(dataTransfer.items).map(function (item) { return item.getAsFile(); })',
           '    : Array.from(dataTransfer.files));',
-          '  if (files.length === 0)', // Needed for Safari, no image yet http://wkb.ug/170449
+          '  if (files.length === 0) {', // Needed for Safari, no image yet http://wkb.ug/170449
           '    noteSubmit(dataTransfer.getData("text/plain"));',
+          '    return;',
+          '  }',
           '  files',
           '    .map(function (file) { return function () { return upload(file); }; })',
           '    .reduce(function (promise, next) { return promise.then(next); }, Promise.resolve())',
