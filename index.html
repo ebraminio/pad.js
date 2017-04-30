@@ -177,11 +177,15 @@ require('http').createServer(function (req, res) {
           'document.body.addEventListener("paste", function (e) {',
           '  handleDataTransfer(e.clipboardData);',
           '});',
+          'function reload() {',
+          // a little delay so users will notice the upload even if it happen so fast
+          '  setTimeout(function () { location.reload(); }, 200);',
+          '}',
           'function noteSubmit(text) {',
           '  text = text || prompt("Enter a note:");',
           '  if (!text) return;',
-          '  upload(new Blob([text], { type: "fakemime/txt" }))',
-          '    .catch(alert).then(function () { location.reload(); });',
+          // fakemime as we split second part for the upload extension which is okay most of the times
+          '  upload(new Blob([text], { type: "fakemime/txt" })).catch(alert).then(reload);',
           '}',
           'function handleDataTransfer(dataTransfer) {',
           '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
@@ -203,7 +207,7 @@ require('http').createServer(function (req, res) {
           '  files',
           '    .map(function (file) { return function () { return upload(file); }; })',
           '    .reduce(function (promise, next) { return promise.then(next); }, Promise.resolve())',
-          '    .then(function () { setTimeout(function () { location.reload(); }, 500); });',
+          '    .then(reload);',
           '}',
           'function upload(file) {',
           '  return new Promise(function (resolve, reject) {',
