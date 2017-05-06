@@ -62,7 +62,7 @@ var contentTypes = {
 var port = process.argv[2] || 9090;
 
 require('http').createServer(function (req, res) {
-  var path = decodeURI(req.url.replace(/^[\/\\]+/g, '').replace(/\.\./g, ''));
+  var path = decodeURI(req.url).replace(/^[\/\\]+/, '').replace(/\.\./g, '');
   if (req.method === 'POST') {
     // aggregate received chunks of file
     var sb = [];
