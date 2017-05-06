@@ -129,7 +129,7 @@ require('http').createServer(function (req, res) {
             '<a onclick="createFolder()" href="#" title="Create a folder">📁</a> ' +
             '<a onclick="noteSubmit()" href="#" title="Create a note">📝</a> ' +
             '<input type="file" onchange="upload(this.files)" multiple></div>',
-          ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
+          ' <h2 style="margin-bottom: 12px;">Index of ' +
             ['<a href="/">.</a>'].concat(path.split('/').slice(0, -1).map(function (x, i, arr) {
               return '<a href="/' + arr.slice(0, i + 1).join('/') + '/">' + x + '</a>';
             })).join('/') + '/</h2>',
@@ -171,7 +171,7 @@ require('http').createServer(function (req, res) {
             }).join('') + '</tbody></table>',
           ' </div>', ' <div style="' +
           'font: 90% monospace; color: #787878; padding-top: 4px;' +
-          '">pad.js.org, supports upload by drag and drop, and copy and paste, your IP is: ' +
+          '">' + os.hostname() + ', pad.js.org, supports upload by drag and drop, and copy and paste, your IP is: ' +
             req.connection.remoteAddress + ' ' +
             (req.headers['x-forwarded-for'] || '') + '</div>', ' <script>',
           '"use strict";',
