@@ -120,7 +120,7 @@ require('http').createServer(function (req, res) {
             'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
           '</head>', ' <body style="background-color: #F5F5F5;">',
           ' <div style="float: right"><a onclick="noteSubmit()" href="#">📝</a> Upload: ' +
-            '<input type="file" onchange="upload(this.files[0])"/></div>',
+            '<input type="file" onchange="upload(this.files)" multiple></div>',
           ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
             ['<a href="/">.</a>'].concat(path.split('/').slice(0, -1).map(function (x, i, arr) {
               return '<a href="/' + arr.slice(0, i + 1).join('/') + '/">' + x + '</a>';
@@ -177,15 +177,11 @@ require('http').createServer(function (req, res) {
           'document.body.addEventListener("paste", function (e) {',
           '  handleDataTransfer(e.clipboardData);',
           '});',
-          'function reload() {',
-          // a little delay so users will notice the upload even if it happen so fast
-          '  setTimeout(function () { location.reload(); }, 200);',
-          '}',
           'function noteSubmit(text) {',
           '  text = text || prompt("Enter a note:");',
           '  if (!text) return;',
           // fakemime as we split second part for the upload extension which is okay most of the times
-          '  upload(new Blob([text], { type: "fakemime/txt" })).catch(alert).then(reload);',
+          '  upload([new Blob([text], { type: "fakemime/txt" })]);',
           '}',
           'function handleDataTransfer(dataTransfer) {',
           '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
@@ -197,31 +193,41 @@ require('http').createServer(function (req, res) {
           '    dataTransfer.items[0].getAsString(noteSubmit);',
           '    return;',
           '  }',
-          '  var files = (dataTransfer.items',
+          '  var files = dataTransfer.items',
           '    ? Array.from(dataTransfer.items).map(function (item) { return item.getAsFile(); })',
-          '    : Array.from(dataTransfer.files));',
+          '    : dataTransfer.files;',
           '  if (files.length === 0) {', // Needed for Safari, no image yet http://wkb.ug/170449
           '    noteSubmit(dataTransfer.getData("text/plain"));',
           '    return;',
           '  }',
-          '  files',
-          '    .map(function (file) { return function () { return upload(file); }; })',
-          '    .reduce(function (promise, next) { return promise.then(next); }, Promise.resolve())',
-          '    .then(reload);',
+          '  upload(files);',
           '}',
-          'function upload(file) {',
-          '  return new Promise(function (resolve, reject) {',
-          '    var reader = new FileReader();',
-          '    reader.addEventListener("load", function () {',
-          '      var name = file.name;',
-          '      if (!name || name === "image.png")', // Firefox uses image.png for clipboard images
-          '        name = Date.now() + "." + file.type.split("/")[1];',
-          '      fetch(encodeURIComponent(name), { method: "post", ' +
-                     'body: reader.result.replace(/^[^,]*?,/, "") })',
-          '        .then(function (x) { return x.text(); })',
-          '        .catch(alert).then(resolve);',
-          '    }, false);',
-          '    reader.readAsDataURL(file);',
+          'function upload(files) {',
+          '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
+              'width: 100%; height: 100%; opacity: .9; position: absolute; ' +
+              'background-color: white; text-align: center; padding-top: 10em;' +
+              '\'>Uploading&hellip;</pre>";',
+          '  Array.from(files).map(function (file) {',
+          '    return function () {',
+          '      return new Promise(function (resolve, reject) {',
+          '        var reader = new FileReader();',
+          '        reader.addEventListener("load", function () {',
+          '          var name = file.name;',
+          '          if (!name || name === "image.png")', // Firefox uses image.png for clipboard images
+          '            name = Date.now() + "." + file.type.split("/")[1];',
+          '          fetch(encodeURIComponent(name), { method: "post", ' +
+                         'body: reader.result.replace(/^[^,]*?,/, "") })',
+          '            .then(function (x) { return x.text(); })',
+          '            .catch(alert).then(resolve);',
+          '        }, false);',
+          '        reader.readAsDataURL(file);',
+          '      });',
+          '    };',
+          '  }).reduce(function (promise, next) {',
+          '    return promise.then(next);',
+          '  }, Promise.resolve()).then(function () {',
+               // a little delay so users will notice the upload even if it happen so fast
+          '    setTimeout(function () { location.reload(); }, 200);',
           '  });',
           '}',
           'var sortState = 1;',
