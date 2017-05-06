@@ -128,7 +128,7 @@ require('http').createServer(function (req, res) {
           ' <div style="float: right">' +
             '<a onclick="createFolder()" href="#" title="Create a folder">📁</a> ' +
             '<a onclick="noteSubmit()" href="#" title="Create a note">📝</a> ' +
-            'Upload: <input type="file" onchange="upload(this.files)" multiple></div>',
+            '<input type="file" onchange="upload(this.files)" multiple></div>',
           ' <h2 style="margin-bottom: 12px;">' + os.hostname() + ': ' +
             ['<a href="/">.</a>'].concat(path.split('/').slice(0, -1).map(function (x, i, arr) {
               return '<a href="/' + arr.slice(0, i + 1).join('/') + '/">' + x + '</a>';
@@ -192,7 +192,7 @@ require('http').createServer(function (req, res) {
           '  upload([new Blob([text], { type: "fakemime/txt" })]);',
           '}',
           'function createFolder() {',
-          '  var name = prompt("Enter a folder name:");',
+          '  var name = prompt("Enter folder name:");',
           '  if (!name) return;',
           '  fetch(encodeURIComponent(name), { method: "put" })',
           '    .then(function (x) { return x.text(); })',
