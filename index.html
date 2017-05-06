@@ -118,9 +118,9 @@ require('http').createServer(function (req, res) {
         res.end(['<!DOCTYPE html>', '<html>', '<head>',
           ' <meta charset="utf-8">',
           ' <link rel="icon" href="data:,">',
-          ' <style>td { padding: 0 2em 0 0; } ' +
+          ' <style>th, td { padding-right: 14px; } ' +
             'td:nth-child(3), th:nth-child(3) { text-align: right; } ' +
-            'th { padding: 0 2em 3px 0; } ' +
+            'th { padding-bottom: 3px; } ' +
             'a, a:active { text-decoration: none; } ' +
             'a:visited { color: #48468F; } ' +
             'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
@@ -136,7 +136,7 @@ require('http').createServer(function (req, res) {
           ' <div style="background-color: white; ' +
           'border-top: 1px solid #646464; border-bottom: 1px solid #646464;' +
           'padding-top: 10px; padding-bottom: 14px;">',
-          ' <table style="' +
+          ' <table ellpadding="0" cellspacing="0" style="' +
             'margin-left: 10px; font: 90% monospace; text-align: left;' +
           '"><thead><tr><th onclick="sort(1)">Name↓</th>' +
           '<th onclick="sort(2)">Last Modified:</th>' +
