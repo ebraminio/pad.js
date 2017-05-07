@@ -170,7 +170,9 @@ require('http').createServer(function (req, res) {
             }).join('') + '</tbody></table>',
           ' </div>', ' <div style="' +
           'font: 90% monospace; color: #787878; padding-top: 4px;' +
-          '">' + os.hostname() + ', pad.js.org, supports upload by drag and drop, and copy and paste, your IP is: ' +
+          '">' + os.hostname() + ', ' + os.platform() + '/' + os.arch() +
+            ', memory: ' + fileSizeSI(os.totalmem()) + ', ' +
+            ' pad.js.org, supports upload by drag and drop, and copy and paste, your IP is: ' +
             req.connection.remoteAddress + ' ' +
             (req.headers['x-forwarded-for'] || '') + '</div>', ' <script>',
           '"use strict";',
