@@ -65,16 +65,23 @@ require('http').createServer(function (req, res) {
   var path = decodeURI(req.url).replace(/^[\/\\]+/, '').replace(/\.\./g, '');
   if (req.method === 'POST') {
     // aggregate received chunks of file
-    var sb = [];
+    var bufferArray = [];
     req.on('data', function (data) {
-      sb.push(data);
+      bufferArray.push(data);
     });
 
     req.on('end', function () {
-      var data = sb.join('');
-      var buffer = new Buffer(data, 'base64');
+      var buffer = Buffer.concat(bufferArray);
 
-      fs.writeFile(path, buffer, { flag: 'wx' }, function (err) {
+      // buffer.indexOf('\r\n\r\n') + 4 but for older nodes, 13 => '\r'
+      for (var start = 4; start < buffer.length; ++start)
+        if (buffer[start - 2] === 13 && buffer[start - 4] === 13) break;
+
+      // buffer.lastIndexOf('\r\n-') but for older nodes, 13 => '\r', 45 => '-'
+      for (var end = buffer.length - 1 - 2; end >= 0; --end)
+        if (buffer[end] === 13 && buffer[end + 2] === 45) break;
+
+      fs.writeFile(path, buffer.slice(start, end), { flag: 'wx' }, function (err) {
         if (err) {
           console.log(err.message);
           res.writeHead(409);
@@ -195,7 +202,7 @@ require('http').createServer(function (req, res) {
           'function createFolder() {',
           '  var name = prompt("Enter folder name:");',
           '  if (!name) return;',
-          '  fetch(encodeURIComponent(name), { method: "put" })',
+          '  fetch(encodeURIComponent(name), { method: "PUT" })',
           '    .then(function (x) { return x.text(); })',
           '    .then(function () { location.reload(); });',
           '}',
@@ -226,17 +233,14 @@ require('http').createServer(function (req, res) {
           '  Array.from(files).map(function (file) {',
           '    return function () {',
           '      return new Promise(function (resolve, reject) {',
-          '        var reader = new FileReader();',
-          '        reader.addEventListener("load", function () {',
-          '          var name = file.name;',
-          '          if (!name || name === "image.png")', // Firefox uses image.png for clipboard images
-          '            name = Date.now() + "." + file.type.split("/")[1];',
-          '          fetch(encodeURIComponent(name), { method: "post", ' +
-                         'body: reader.result.replace(/^[^,]*?,/, "") })',
-          '            .then(function (x) { return x.text(); })',
-          '            .catch(alert).then(resolve);',
-          '        }, false);',
-          '        reader.readAsDataURL(file);',
+          '        var name = file.name;',
+          '        if (!name || name === "image.png")', // Firefox uses image.png for clipboard images
+          '          name = Date.now() + "." + file.type.split("/")[1];',
+          '        var formData = new FormData();',
+          '        formData.append("blob", file, "file");',
+          '        fetch(encodeURIComponent(name), { method: "POST", body: formData })',
+          '          .then(function (x) { return x.text(); })',
+          '          .catch(alert).then(resolve);',
           '      });',
           '    };',
           '  }).reduce(function (promise, next) {',
@@ -354,7 +358,9 @@ fetch('http://127.0.0.1:9090/a.txt')
 
 <u>upload a text file:</u>
 <pre>
-fetch('http://127.0.0.1:9090/a.txt', { method: 'post', body: btoa('STRING YOU LIKE TO SAVE') })
+var formData = new FormData();
+formData.append('blob', new Blob(['STRING YOU LIKE TO SAVE']), 'file');
+fetch('http://127.0.0.1:9090/a.txt', { method: 'POST', body: formData })
   .then(x => x.text())
   .then(console.log);
 </pre>
@@ -364,15 +370,17 @@ fetch('http://127.0.0.1:9090/a.txt', { method: 'post', body: btoa('STRING YOU LI
 // Create a canvas, make 200x200 blue rectangle on it, upload its base64 encoded binary
 var canvas = document.createElement('canvas'), context = canvas.getContext('2d');
 canvas.width = 200; canvas.height = 200; context.fillStyle = 'blue'; context.fillRect(0, 0, 200, 200);
-var png = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
-
-fetch('http://127.0.0.1:9090/a.png', { method: 'post', body: png })
-  .then(x => x.text())
-  .then(console.log);
+canvas.toBlob(function (blob) {
+  var formData = new FormData();
+  formData.append('blob', blob, 'file');
+  fetch('http://127.0.0.1:9090/a.png', { method: 'POST', body: formData })
+    .then(x => x.text())
+    .then(console.log);
+});
 </pre>
 
 <u>upload a file from terminal:</u>
-<pre>base64 a.png | curl -d @- http://127.0.0.1:9090/a.png</pre>
+<pre>curl -F "file=@a.png" http://127.0.0.1:9090/a.png</pre>
 
 <p><a href="https://github.com/ebraminio/pad.js">Source</a></p>
 
