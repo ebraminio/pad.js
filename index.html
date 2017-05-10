@@ -76,7 +76,17 @@ var contentTypes = {
 
 var port = +process.argv[2] || 9090;
 
-var safeServ = process.argv.indexOf('safeserv') !== -1;
+var safeServ = process.argv.indexOf('--safeserv') !== -1;
+
+if (process.argv.indexOf('-h') !== -1 ||
+    process.argv.indexOf('--help') !== -1) {
+  console.log('Usage: pad [PORT] [OPTION]...\n\nOptions: \n' +
+    '      --safeserv  put mime only on limited file types\n' +
+    '  -h, --help      display this help and exit\n' +
+    '\n' +
+    'The PORT argument is an integer and optional, the default value is 9090');
+  process.exit();
+}
 
 require('http').createServer(function (req, res) {
   var path = decodeURI(req.url)
