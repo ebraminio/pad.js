@@ -302,7 +302,7 @@ require('http').createServer(function (req, res) {
 
       var contentType = contentTypes[path.replace(/^.*\.(.*)$/, "$1")];
 
-      if (contentType === 'text/plain')
+      if (contentType.indexOf('text/') === 0)
         contentType = 'text/plain; charset=utf-8';
 
       if (contentType === undefined) // fallback mime
