@@ -67,9 +67,11 @@ var contentTypes = {
   m4v: 'video/x-m4v', mng: 'video/x-mng', asx: 'video/x-ms-asf', asf: 'video/x-ms-asf',
   wmv: 'video/x-ms-wmv', avi: 'video/x-msvideo', mkv: 'video/webm', mime: 'www/mime',
   tar: 'application/x-tar', tgz: 'application/x-tar-gz', gz: 'application/x-gzip'
-}
+};
 
-var port = process.argv[2] || 9090;
+var port = +process.argv[2] || 9090;
+
+var safeServ = process.argv.indexOf('safeserv') !== -1;
 
 require('http').createServer(function (req, res) {
   var path = decodeURI(req.url).replace(/^[\/\\]+/, '').replace(/\.\./g, '');
@@ -292,11 +294,16 @@ require('http').createServer(function (req, res) {
 
     } else {
 
-      var contentType = contentTypes[path.replace(/^.*\.(.*)$/, "$1")]
-          || 'application/octet-stream';
+      var contentType = contentTypes[path.replace(/^.*\.(.*)$/, "$1")];
 
       if (contentType === 'text/plain')
         contentType = 'text/plain; charset=utf-8';
+
+      if (contentType === undefined) // fallback mime
+        contentType = 'application/octet-stream';
+
+      if (safeServ && !/^(audio|video)\//.test(contentType))
+        contentType = 'application/octet-stream';
 
       // http://stackoverflow.com/a/28972079/1414809
       if (req.headers.range) {
