@@ -19,6 +19,11 @@ function escapeHtml(unsafe) {
     .replace(/'/g, "&#039;");
 }
 
+// http://stackoverflow.com/a/9756789
+function quoteattr(s) {
+  return escapeHtml(s).replace(/\r\n/g, '\n').replace(/[\r\n]/g, '\n');
+}
+
 // https://gist.github.com/ebraminio/a2e4338ce29d71156ea1703f5aaec4b6
 var contentTypes = {
   html: 'text/html', htm: 'text/html', shtml: 'text/html', css: 'text/css',
@@ -74,7 +79,8 @@ var port = +process.argv[2] || 9090;
 var safeServ = process.argv.indexOf('safeserv') !== -1;
 
 require('http').createServer(function (req, res) {
-  var path = decodeURI(req.url).replace(/^[\/\\]+/, '').replace(/\.\./g, '');
+  var path = decodeURI(req.url)
+    .replace(/^[\/\\]+/, '').replace(/(^|[\/\\])\.\./g, '');
   if (req.method === 'POST') {
     // aggregate received chunks of file
     var bufferArray = [];
@@ -150,7 +156,7 @@ require('http').createServer(function (req, res) {
           ' <h2 style="margin-bottom: 12px;">Index of ' +
             ['<a href="/">.</a>'].concat(path.split('/').slice(0, -1).map(function (x, i, arr) {
               return '<a href="/' +
-                escapeHtml(arr.slice(0, i + 1).join('/')) + '/">' +
+                quoteattr(arr.slice(0, i + 1).join('/')) + '/">' +
                 escapeHtml(x) + '</a>';
             })).join('/') + '/</h2>',
           ' <div style="background-color: white; ' +
@@ -181,7 +187,7 @@ require('http').createServer(function (req, res) {
             })
             .map(function (x) {
               return '  <tr>\n   <td>' +
-                '<a href="' + escapeHtml(x.name) + (x.isDir ? '/' : '') + '">' +
+                '<a href="' + quoteattr(x.name) + (x.isDir ? '/' : '') + '">' +
                 escapeHtml(x.name === '..' ? 'Parent Directory' : x.name) +
                 '</a></td>\n   <td title="' + new Date(x.date).getTime() +
                 '">' + x.date + '</td>\n   <td title="' + x.size + '">' +
