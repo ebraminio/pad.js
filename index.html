@@ -9,6 +9,16 @@ function fileSizeSI(size) {
   return Math.floor(size / Math.pow(1e3, e)) + ('kMGTPEZY'[e - 1] || '') + 'B';
 }
 
+// http://stackoverflow.com/a/6234804
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // https://gist.github.com/ebraminio/a2e4338ce29d71156ea1703f5aaec4b6
 var contentTypes = {
   html: 'text/html', htm: 'text/html', shtml: 'text/html', css: 'text/css',
@@ -137,7 +147,9 @@ require('http').createServer(function (req, res) {
             '<input type="file" onchange="upload(this.files)" multiple></div>',
           ' <h2 style="margin-bottom: 12px;">Index of ' +
             ['<a href="/">.</a>'].concat(path.split('/').slice(0, -1).map(function (x, i, arr) {
-              return '<a href="/' + arr.slice(0, i + 1).join('/') + '/">' + x + '</a>';
+              return '<a href="/' +
+                escapeHtml(arr.slice(0, i + 1).join('/')) + '/">' +
+                escapeHtml(x) + '</a>';
             })).join('/') + '/</h2>',
           ' <div style="background-color: white; ' +
           'border-top: 1px solid #646464; border-bottom: 1px solid #646464;' +
@@ -167,8 +179,8 @@ require('http').createServer(function (req, res) {
             })
             .map(function (x) {
               return '  <tr>\n   <td>' +
-                '<a href="' + x.name + (x.isDir ? '/' : '') + '">' +
-                (x.name === '..' ? 'Parent Directory' : x.name) +
+                '<a href="' + escapeHtml(x.name) + (x.isDir ? '/' : '') + '">' +
+                escapeHtml(x.name === '..' ? 'Parent Directory' : x.name) +
                 '</a></td>\n   <td title="' + new Date(x.date).getTime() +
                 '">' + x.date + '</td>\n   <td title="' + x.size + '">' +
                 (x.isDir ? '-' : fileSizeSI(x.size)) + '</td>' +
