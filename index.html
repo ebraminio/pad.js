@@ -81,6 +81,7 @@ function hasOption(name) {
 }
 
 var localOnly = hasOption('--local');
+var noCors = hasOption('--no-cors');
 var noInfo = hasOption('--no-info');
 var noMime = hasOption('--no-mime');
 var noRange = hasOption('--no-range');
@@ -93,8 +94,9 @@ if (hasOption('-h') || hasOption('--help')) {
     '',
     'Options:',
     '      --local      run only on localhost',
+    '      --no-cors    don\'t allow Cross-Origin Resource Sharing (CORS)',
     '      --no-info    hide extra info pad.js gives',
-    '      --no-mime    don\'t serve add dangerous mime, for more safety',
+    '      --no-mime    don\'t add dangerous mime, for more safety',
     '      --no-range   no range (HTTP/206 Partial Content) serving',
     '      --no-utf8    don\'t add utf-8 on text/* mimes',
     '      --no-upload  disable uploads',
@@ -106,9 +108,16 @@ if (hasOption('-h') || hasOption('--help')) {
 }
 
 require('http').createServer(function (req, res) {
+  if (noCors && req.headers['origin']) {
+    res.writeHead(405);
+    res.end('HTTP Error 403 CORS is not allowed');
+    return;
+  }
+
   if (noUpload && ['POST', 'PUT', 'DELETE'].indexOf(req.method) !== -1) {
     res.writeHead(405);
     res.end('HTTP Error 405 Method Not Allowed');
+    return;
   }
 
   var path = decodeURI(req.url)
@@ -336,11 +345,11 @@ require('http').createServer(function (req, res) {
 
       var contentType = contentTypes[path.replace(/^.*\.(.*)$/, "$1")];
 
-      if ((contentType.indexOf('text/') === 0) && !noForcedUtf8)
-        contentType = 'text/plain; charset=utf-8';
-
       if (contentType === undefined) // fallback mime
         contentType = 'application/octet-stream';
+
+      if ((contentType.indexOf('text/') === 0) && !noForcedUtf8)
+        contentType = 'text/plain; charset=utf-8';
 
       if (noMime && !/^(audio|video)\//.test(contentType))
         contentType = 'application/octet-stream';

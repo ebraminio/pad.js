@@ -4,4 +4,4 @@ RUN apk update && apk add nodejs
 ADD index.html /index.js
 WORKDIR /files
 EXPOSE 9090/tcp
-ENTRYPOINT node /index.js --no-mime
+ENTRYPOINT node /index.js --no-cors --no-info --no-mime
