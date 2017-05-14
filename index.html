@@ -85,8 +85,6 @@ var allowDelete = hasOption('--delete');
 var noCors = hasOption('--no-cors');
 var noInfo = hasOption('--no-info');
 var noMime = hasOption('--no-mime');
-var noRange = hasOption('--no-range');
-var noForcedUtf8 = hasOption('--no-utf8');
 var noUpload = hasOption('--no-upload');
 
 if (hasOption('-h') || hasOption('--help')) {
@@ -95,12 +93,10 @@ if (hasOption('-h') || hasOption('--help')) {
     '',
     'Options:',
     '      --local      run only on localhost',
-    '      --delete     allow delete',
+    '      --delete     allow file deletion',
     '      --no-cors    don\'t allow Cross-Origin Resource Sharing (CORS)',
     '      --no-info    hide extra info pad.js gives',
     '      --no-mime    don\'t add dangerous mime, for more safety',
-    '      --no-range   no range (HTTP/206 Partial Content) serving',
-    '      --no-utf8    don\'t add utf-8 on text/* mimes',
     '      --no-upload  disable uploads',
     '  -h, --help       display this help and exit',
     '',
@@ -367,14 +363,14 @@ require('http').createServer(function (req, res) {
       if (contentType === undefined) // fallback mime
         contentType = 'application/octet-stream';
 
-      if ((contentType.indexOf('text/') === 0) && !noForcedUtf8)
-        contentType = 'text/plain; charset=utf-8';
+      if (contentType.indexOf('text/') === 0)
+        contentType = contentType + '; charset=utf-8';
 
       if (noMime && !/^(audio|video)\//.test(contentType))
         contentType = 'application/octet-stream';
 
       // http://stackoverflow.com/a/28972079/1414809
-      if (req.headers.range && !noRange) {
+      if (req.headers.range) {
         var parts = req.headers.range.replace(/bytes=/, "").split("-");
 
         var start = +parts[0];
