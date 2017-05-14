@@ -123,7 +123,7 @@ require('http').createServer(function (req, res) {
   }
 
   var path = decodeURI(req.url)
-    .replace(/^[\/\\]+/, '').replace(/(^|[\/\\])\.\./g, '');
+    .replace(/^[\/\\]+/, '').replace(/(^|[\/\\])\.\.([\/\\]|$)/g, '');
 
   if (allowDelete && req.method === 'DELETE') {
     fs.unlink(path, function () {
