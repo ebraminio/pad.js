@@ -86,6 +86,7 @@ var noCors = hasOption('--no-cors');
 var noInfo = hasOption('--no-info');
 var noMime = hasOption('--no-mime');
 var noUpload = hasOption('--no-upload');
+var https = hasOption('--https');
 
 if (hasOption('-h') || hasOption('--help')) {
   console.log([
@@ -98,6 +99,7 @@ if (hasOption('-h') || hasOption('--help')) {
     '      --no-info    hide extra info pad.js gives',
     '      --no-mime    don\'t add dangerous mime, for more safety',
     '      --no-upload  disable uploads',
+    '      --https      enable https',
     '  -h, --help       display this help and exit',
     '',
     'The PORT argument is an integer and optional, the default value is 9090'
@@ -105,7 +107,12 @@ if (hasOption('-h') || hasOption('--help')) {
   process.exit();
 }
 
-require('http').createServer(function (req, res) {
+(https ? function (requestListener) {
+  return require('https').createServer({
+    key: fs.readFileSync('/etc/ssl/pad.js/pad.js.key'),
+    cert: fs.readFileSync('/etc/ssl/pad.js/pad.js.crt')
+  }, requestListener);
+} : require('http').createServer)(function (req, res) {
   if (noCors && req.headers['origin']) {
     res.writeHead(405);
     res.end('HTTP Error 403 CORS is not allowed');
@@ -409,7 +416,8 @@ console.log('(' + Object.keys(ifs)
   })
   .filter(function (x) { return x[1]; })
   .filter(function (x) { return !localOnly || (x[1].address === '127.0.0.1'); })
-  .map(function (x) { return x[0] + ': http://' + x[1].address + ':' + port; })
+  .map(function (x) { return x[0] + ': ' + (https ? 'https' : 'http') + '://' +
+    x[1].address + ':' + port; })
   .join(', ') + ')');
 /* -->
 <!DOCTYPE html>
@@ -431,6 +439,23 @@ console.log('(' + Object.keys(ifs)
 <p>Use this if you want to have it as a terminal tool:</p>
 <pre>npm install -g pad.js
 pad [PORT]</pre>
+
+<h3>HTTPS:</h3>
+<pre>
+sudo mkdir /etc/ssl/pad.js
+sudo openssl genrsa -out "/etc/ssl/pad.js/pad.js.key" 2048
+sudo openssl req -new -key "/etc/ssl/pad.js/pad.js.key" -out "/etc/ssl/pad.js/pad.js.csr"
+sudo openssl x509 -req -days 365 \
+  -in "/etc/ssl/pad.js/pad.js.csr" \
+  -signkey "/etc/ssl/pad.js/pad.js.key" \
+  -out "/etc/ssl/pad.js/pad.js.crt"
+</pre>
+Then run locally installed pad.js like:
+<pre>pad --https</pre>
+or: (needs <a href="https://github.com/nodejs/node/pull/13012">node.js 8</a>)
+<pre>curl pad.js.org | node - --https</pre>
+or: (currently works only on macOS)
+<pre>curl pad.js.org | node /dev/stdin --https</pre>
 
 <h3>Show cases:</h3>
 
