@@ -436,7 +436,8 @@ console.log('(' + Object.keys(ifs)
 <p>Or this sets it up as a Docker daemon:</p>
 <pre>docker run --restart=always -v /files:/files --name pad.js -d -p 9090:9090 quay.io/ebraminio/pad.js</pre>
 
-<p>Use this if you want to have it as a terminal tool:</p>
+<p>Use this if you want to have it as a terminal tool:
+  <u>(please install nodejs-legacy on Debian before the installation)</u></p>
 <pre>npm install -g pad.js
 pad [PORT]</pre>
 
@@ -475,7 +476,7 @@ fetch('http://127.0.0.1:9090/a.txt', { method: 'POST', body: formData })
   .then(console.log);
 </pre>
 
-<u>upload a base64 encoded file:</u>
+<u>upload a file:</u>
 <pre>
 // Create a canvas, make 200x200 blue rectangle on it, upload its base64 encoded binary
 var canvas = document.createElement('canvas'), context = canvas.getContext('2d');
