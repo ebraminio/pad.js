@@ -419,6 +419,10 @@ console.log('(' + Object.keys(ifs)
   .map(function (x) { return x[0] + ': ' + (https ? 'https' : 'http') + '://' +
     x[1].address + ':' + port; })
   .join(', ') + ')');
+
+process.on('uncaughtException', function (err) {
+  console.log('Caught exception: ' + err);
+});
 /* -->
 <!DOCTYPE html>
 <h1>pad.js</h1>
