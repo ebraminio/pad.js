@@ -115,31 +115,33 @@ if (hasOption('-h') || hasOption('--help')) {
 } : require('http').createServer)(function (req, res) {
   if (noCors && req.headers['origin']) {
     res.writeHead(405);
-    res.end('HTTP Error 403 CORS is not allowed');
-    return;
+    return res.end('HTTP Error 403 CORS is not allowed');
   }
 
   if (noUpload && ['POST', 'PUT'].indexOf(req.method) !== -1) {
     res.writeHead(405);
-    res.end('HTTP Error 405 Method Not Allowed');
-    return;
+    return res.end('HTTP Error 405 Method Not Allowed');
   }
 
-  var path = decodeURI(req.url)
-    .replace(/^[\/\\]+/, '').replace(/(^|[\/\\])\.\.([\/\\]|$)/g, '');
+  var path = req.url;
+  try {
+    path = decodeURI(path);
+  } catch (e) {
+    res.writeHead(409);
+    return res.end('HTTP Error 400 Bad Request, error on parsing url');
+  }
+  path = path.replace(/^[\/\\]+/, '').replace(/(^|[\/\\])\.\.([\/\\]|$)/g, '');
 
   if (allowDelete && req.method === 'DELETE') {
-    fs.unlink(path, function () {
-      res.end();
+    return fs.unlink('./' + path, function () {
+      return res.end();
     });
-    return;
   }
 
   if (req.method === 'PUT') {
-    return fs.mkdir(path, function () {
-      res.end();
+    return fs.mkdir('./' + path, function () {
+      return res.end();
     });
-    return;
   }
 
   if (req.method === 'POST') {
@@ -149,7 +151,7 @@ if (hasOption('-h') || hasOption('--help')) {
       bufferArray.push(data);
     });
 
-    req.on('end', function () {
+    return req.on('end', function () {
       var buffer = Buffer.concat(bufferArray);
 
       // buffer.indexOf('\r\n\r\n') + 4 but for older nodes, 13 => '\r'
@@ -160,211 +162,37 @@ if (hasOption('-h') || hasOption('--help')) {
       for (var end = buffer.length - 1 - 2; end >= 0; --end)
         if (buffer[end] === 13 && buffer[end + 2] === 45) break;
 
-      fs.writeFile(path, buffer.slice(start, end), { flag: 'wx' }, function (err) {
+      fs.writeFile('./' + path, buffer.slice(start, end), { flag: 'wx' }, function (err) {
         if (err) {
           console.log(err.message);
           res.writeHead(409);
-          res.end('HTTP Error 409 Conflict, a file with same name exists');
-        } else {
-          res.writeHead(200, 'OK', {
-            'Content-Type' : 'text/plain',
-            'Access-Control-Allow-Origin': '*'
-          });
-          res.end('Done');
-          console.log('"' + path + '" SAVED!');
+          return res.end('HTTP Error 409 Conflict, a file with same name exists');
         }
+
+        console.log('"' + path + '" SAVED!');
+        res.writeHead(200, 'OK', {
+          'Content-Type' : 'text/plain',
+          'Access-Control-Allow-Origin': '*'
+        });
+        return res.end('Done');
       });
     });
-    return;
   }
 
-  fs.lstat('./' + path, function (err, stat) {
+  return fs.lstat('./' + path, function (err, stat) {
     if (err) {
       console.log('"' + path + '" was requested but not found.');
       res.writeHead(404);
-      res.end('HTTP 404 File not found');
-    } else if (stat.isSymbolicLink()) {
+      return res.end('HTTP 404 File not found');
+    }
+
+    if (stat.isSymbolicLink()) {
       console.log('"' + path + '" a symlink was requested but got denied.');
       res.writeHead(403);
-      res.end('HTTP 403 Serving symlink is forbidden, at least for now');
-    } else if (stat.isDirectory()) {
+      return res.end('HTTP 403 Serving symlink is forbidden, at least for now');
+    }
 
-      if (!req.url.match(/\/$/)) {
-        res.writeHead(302, { 'Location': req.url + '/' });
-        res.end();
-        return;
-      }
-
-      fs.readdir('./' + path, function (err, dir) {
-        res.end(['<!DOCTYPE html>', '<html>', '<head>',
-          ' <meta charset="utf-8">',
-          ' <link rel="icon" href="data:,">',
-          ' <style>td:nth-child(3), th:nth-child(3) { text-align: right; } ' +
-            'th, td { padding-right: 14px; } th { padding-bottom: 3px; } ' +
-            'a, a:active { text-decoration: none; } ' +
-            'a:visited { color: #48468F; } ' +
-            'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
-          '</head>', ' <body style="background-color: #F5F5F5;">',
-          (noUpload ? '' : ' <div style="float: right">' +
-            '<a onclick="createFolder()" href="#" title="Create a folder">📁</a> ' +
-            '<a onclick="noteSubmit()" href="#" title="Create a note">📝</a> ' +
-            '<input type="file" onchange="upload(this.files)" multiple></div>'),
-          ' <h2 style="margin-bottom: 12px;">Index of ' +
-            ['<a href="/">.</a>'].concat(path.split('/').slice(0, -1).map(function (x, i, arr) {
-              return '<a href="/' +
-                quoteattr(arr.slice(0, i + 1).join('/')) + '/">' +
-                escapeHtml(x) + '</a>';
-            })).join('/') + '/</h2>',
-          ' <div style="background-color: white; ' +
-          'border-top: 1px solid #646464; border-bottom: 1px solid #646464;' +
-          'padding-top: 10px; padding-bottom: 14px;">',
-          ' <table ellpadding="0" cellspacing="0" style="' +
-            'margin-left: 12px; font: 90% monospace; text-align: left;' +
-          '"><thead><tr><th onclick="sort(1)">Name↓</th>' +
-          '<th onclick="sort(2)">Last Modified:</th>' +
-          '<th onclick="sort(3)">Size:</th>' +
-          '<th onclick="sort(4)">Type:</th></tr></thead><tbody>' +
-          (path === '' ? dir : ['..'].concat(dir))
-            .map(function (x) {
-              var fileStat = fs.lstatSync('./' + path + x);
-              var ext = x.replace(/^.*\.(.*)$/, "$1");
-              return {
-                name: x.toString(),
-                ext: ext,
-                size: fileStat.size,
-                date: fileStat.mtime.toString().split('(')[0],
-                isDir: fileStat.isDirectory()
-              };
-            })
-            .sort(function (x, y) {
-              return x.isDir !== y.isDir
-                ? (x.isDir < y.isDir ? 1 : -1)
-                : (x.name > y.name ? 1 : -1);
-            })
-            .map(function (x) {
-              return '  <tr>\n   <td>' + (allowDelete ?
-                  '<a href="#" onclick="deleteFile(this.title)" title="' +
-                     quoteattr(x.name) + '" style="color: red">✗</a> ' : '') +
-                '<a href="' + quoteattr(x.name) + (x.isDir ? '/' : '') + '">' +
-                escapeHtml(x.name === '..' ? 'Parent Directory' : x.name) +
-                '</a></td>\n   <td title="' + new Date(x.date).getTime() +
-                '">' + x.date + '</td>\n   <td title="' + x.size + '">' +
-                (x.isDir ? '-' : fileSizeSI(x.size)) + '</td>' +
-                '<td>' + (x.isDir ? 'Directory' : contentTypes[x.ext] || '') +
-                '</td>\n  </tr>';
-            }).join('') + '</tbody></table>',
-          ' </div>', ' <div style="' +
-          'font: 90% monospace; color: #787878; padding-top: 4px;' +
-          '">' + (noInfo ? '' : os.hostname() + ', ' + os.platform() + '/' + os.arch() +
-            ', memory: ' + fileSizeSI(os.totalmem()) + ', ') +
-            ' pad.js.org, ' +
-              (noUpload ? '' : 'supports upload by drag-and-drop and copy-and-paste, ') +
-              'your IP is: ' +
-              req.connection.remoteAddress + ' ' +
-              (req.headers['x-forwarded-for'] || '') + '</div>', ' <script>',
-          '"use strict";',
-          'function stopEvent(e) { e.stopPropagation(); e.preventDefault(); }',
-          'document.addEventListener("dragleave", stopEvent, false);',
-          'document.addEventListener("dragover", stopEvent, false);',
-          'document.addEventListener("drop", function (e) {',
-          '  stopEvent(e);',
-          '  handleDataTransfer(e.dataTransfer);',
-          '});',
-          'document.body.addEventListener("paste", function (e) {',
-          '  handleDataTransfer(e.clipboardData);',
-          '});',
-          'function noteSubmit(text) {',
-          '  text = text || prompt("Enter a note:");',
-          '  if (!text) return;',
-          // fakemime as we split second part for the upload extension which is okay most of the times
-          '  upload([new Blob([text], { type: "fakemime/txt" })]);',
-          '}',
-          'function createFolder() {',
-          '  var name = prompt("Enter folder name:");',
-          '  if (!name) return;',
-          '  fetch(encodeURIComponent(name), { method: "PUT" })',
-          '    .then(function (x) { return x.text(); })',
-          '    .then(function () { location.reload(); });',
-          '}',
-          'function deleteFile(name) {',
-          '  fetch(encodeURIComponent(name), { method: "DELETE" })',
-          '    .then(function (x) { return x.text(); })',
-          '    .then(function () { location.reload(); });',
-          '}',
-          'function handleDataTransfer(dataTransfer) {',
-          '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
-              'width: 100%; height: 100%; opacity: .9; position: absolute; ' +
-              'background-color: white; text-align: center; padding-top: 10em;' +
-              '\'>Uploading&hellip;</pre>";',
-          '',
-          '  if (dataTransfer.items && dataTransfer.items[0] && dataTransfer.items[0].kind === "string") {',
-          '    dataTransfer.items[0].getAsString(noteSubmit);',
-          '    return;',
-          '  }',
-          '  var files = dataTransfer.items',
-          '    ? Array.from(dataTransfer.items).map(function (item) { return item.getAsFile(); })',
-          '    : dataTransfer.files;',
-          '  if (files.length === 0) {', // Needed for Safari, no image yet http://wkb.ug/170449
-          '    noteSubmit(dataTransfer.getData("text/plain"));',
-          '    return;',
-          '  }',
-          '  upload(files);',
-          '}',
-          'function upload(files) {',
-          '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
-              'width: 100%; height: 100%; opacity: .9; position: absolute; ' +
-              'background-color: white; text-align: center; padding-top: 10em;' +
-              '\'>Uploading&hellip;</pre>";',
-          '  Array.from(files).map(function (file) {',
-          '    return function () {',
-          '      return new Promise(function (resolve, reject) {',
-          '        var name = file.name;',
-          '        if (!name || name === "image.png")', // Firefox uses image.png for clipboard images
-          '          name = Date.now() + "." + file.type.split("/")[1];',
-          '        var formData = new FormData();',
-          '        formData.append("blob", file, "file");',
-          '        fetch(encodeURIComponent(name), { method: "POST", body: formData })',
-          '          .then(function (x) { return x.text(); })',
-          '          .catch(alert).then(resolve);',
-          '      });',
-          '    };',
-          '  }).reduce(function (promise, next) {',
-          '    return promise.then(next);',
-          '  }, Promise.resolve()).then(function () {',
-               // a little delay so users will notice the upload even if it happen so fast
-          '    setTimeout(function () { location.reload(); }, 200);',
-          '  });',
-          '}',
-          'var sortState = 1;',
-          'function sort(ord) {',
-          '  sortState = ord === sortState ? -ord : ord;',
-          '  var p = document.getElementsByTagName("tbody")[0];',
-          // http://stackoverflow.com/a/39569822
-          '  Array.from(p.children)',
-          '    .map(function (x) { return p.removeChild(x); })',
-          '    .sort(function (x, y) {',
-          '      x = x.getElementsByTagName("td");',
-          '      y = y.getElementsByTagName("td");',
-          '      var xDir = x[3].textContent === "Directory";',
-          '      var yDir = y[3].textContent === "Directory";',
-          '      if (xDir !== yDir) return xDir < yDir ? 1 : -1;',
-          '      if (x[0].textContent === "Parent Directory") return -1;',
-          '      if (y[0].textContent === "Parent Directory") return 1;',
-          '      if (ord === 2 || ord === 3)',
-          '        return +x[ord - 1].title > +y[ord - 1].title ? sortState : -sortState;',
-          '      return x[ord - 1].textContent > y[ord - 1].textContent ? sortState : -sortState;',
-          '    }).forEach(function (x) { p.appendChild(x); });',
-          '  Array.from(document.getElementsByTagName("th")).forEach(function (x, i) {',
-          '    x.textContent = x.textContent.replace(/.$/, i === ord - 1',
-          '      ? (sortState < 0 ? "↑" : "↓") : ":");',
-          '  });',
-          '}',
-          ' </script>', '</body>', '</html>'
-        ].join('\n'));
-      });
-
-    } else {
-
+    if (!stat.isDirectory()) { // i.e. is a file
       var contentType = contentTypes[path.replace(/^.*\.(.*)$/, "$1")];
 
       if (contentType === undefined) // fallback mime
@@ -382,8 +210,7 @@ if (hasOption('-h') || hasOption('--help')) {
 
         var start = +parts[0];
         var end = parts[1] ? +parts[1] : stat.size - 1;
-        console.log('"' + path + '" SERVED! RANGE: ' +
-          start + ' - ' + end);
+        console.log('"' + path + '" SERVED! RANGE: ' + start + ' - ' + end);
 
         res.writeHead(206, {
           'Content-Range': 'bytes ' + start + '-' + end + '/' + stat.size,
@@ -392,17 +219,200 @@ if (hasOption('-h') || hasOption('--help')) {
           'Content-Type': contentType,
           'Access-Control-Allow-Origin': '*'
         });
-        fs.createReadStream(path, { start: start, end: end }).pipe(res);
-      } else {
-        console.log('"' + path + '" SERVED!');
-        res.writeHead(200, {
-          'Content-Length': stat.size,
-          'Content-Type': contentType,
-          'Access-Control-Allow-Origin': '*'
-        });
-        fs.createReadStream(path).pipe(res);
+        return fs.createReadStream(path, { start: start, end: end }).pipe(res);
       }
+
+      console.log('"' + path + '" SERVED!');
+      res.writeHead(200, {
+        'Content-Length': stat.size,
+        'Content-Type': contentType,
+        'Access-Control-Allow-Origin': '*'
+      });
+      return fs.createReadStream(path).pipe(res);
     }
+
+    // so is a directory, create and serve directory index page
+    if (!req.url.match(/\/$/)) {
+      res.writeHead(302, { 'Location': req.url + '/' });
+      return res.end();
+    }
+
+    return fs.readdir('./' + path, function (err, dir) {
+      return res.end([
+        '<!DOCTYPE html>',
+        '<html>',
+        '<head>',
+        ' <meta charset="utf-8">',
+        ' <link rel="icon" href="data:,">',
+        ' <style>td:nth-child(3), th:nth-child(3) { text-align: right; } ' +
+          'th, td { padding-right: 14px; } th { padding-bottom: 3px; } ' +
+          'a, a:active { text-decoration: none; } ' +
+          'a:visited { color: #48468F; } ' +
+          'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
+        '</head>',
+        '<body style="background-color: #F5F5F5;">',
+        (noUpload ? '' : ' <div style="float: right">' +
+          '<a onclick="createFolder()" href="#" title="Create a folder">📁</a> ' +
+          '<a onclick="noteSubmit()" href="#" title="Create a note">📝</a> ' +
+          '<input type="file" onchange="upload(this.files)" multiple></div>'),
+        ' <h2 style="margin-bottom: 12px;">Index of ' +
+          ['<a href="/">.</a>'].concat(path.split('/').slice(0, -1).map(function (x, i, arr) {
+            return '<a href="/' +
+              quoteattr(arr.slice(0, i + 1).join('/')) + '/">' +
+              escapeHtml(x) + '</a>';
+          })).join('/') + '/</h2>',
+        ' <div style="background-color: white;' +
+          ' border-top: 1px solid #646464; border-bottom: 1px solid #646464;' +
+          ' padding-top: 10px; padding-bottom: 14px;">',
+        '  <table ellpadding="0" cellspacing="0" style="' +
+          'margin-left: 12px; font: 90% monospace; text-align: left;' +
+        '"><thead><tr><th onclick="sort(1)">Name↓</th>' +
+        '<th onclick="sort(2)">Last Modified:</th>' +
+        '<th onclick="sort(3)">Size:</th>' +
+        '<th onclick="sort(4)">Type:</th></tr></thead><tbody>',
+        (path === '' ? dir : ['..'].concat(dir)).map(function (x) {
+          var fileStat;
+          try {
+            fileStat = fs.lstatSync('./' + path + x);
+          } catch (e) {
+            res.writeHead(500);
+            res.end('HTTP Error 500 Internal Error ' + e);
+            return { name: '' };
+          }
+          var ext = x.replace(/^.*\.(.*)$/, "$1");
+          return {
+            name: x.toString(),
+            ext: ext,
+            size: fileStat.size,
+            date: fileStat.mtime.toString().split('(')[0],
+            isDir: fileStat.isDirectory()
+          };
+        }).sort(function (x, y) {
+          return x.isDir !== y.isDir
+            ? (x.isDir < y.isDir ? 1 : -1)
+            : (x.name > y.name ? 1 : -1);
+        }).map(function (x) {
+          return '   <tr>\n    <td>' + (allowDelete ?
+              '<a href="#" onclick="deleteFile(this.title)" title="' +
+                  quoteattr(x.name) + '" style="color: red">✗</a> ' : '') +
+            '<a href="' + quoteattr(x.name) + (x.isDir ? '/' : '') + '">' +
+            escapeHtml(x.name === '..' ? 'Parent Directory' : x.name) +
+            '</a></td>\n    <td title="' + new Date(x.date).getTime() +
+            '">' + x.date + '</td>\n    <td title="' + x.size + '">' +
+            (x.isDir ? '-' : fileSizeSI(x.size)) + '</td>' +
+            '\n    <td>' + (x.isDir ? 'Directory' : contentTypes[x.ext] || '') +
+            '</td>\n   </tr>';
+        }).join('\n'),
+        '  </tbody></table>',
+        ' </div>', ' <div style="' +
+        'font: 90% monospace; color: #787878; padding-top: 4px;' +
+        '">' + (noInfo ? '' : os.hostname() + ', ' + os.platform() + '/' + os.arch() +
+          ', memory: ' + fileSizeSI(os.totalmem()) + ', ') +
+          ' pad.js.org, ' +
+            (noUpload ? '' : 'supports upload by drag-and-drop and copy-and-paste, ') +
+            'your IP is: ' +
+            req.connection.remoteAddress + ' ' +
+            (req.headers['x-forwarded-for'] || '') + '</div>', ' <script>',
+        '"use strict";',
+        'function stopEvent(e) { e.stopPropagation(); e.preventDefault(); }',
+        'document.addEventListener("dragleave", stopEvent, false);',
+        'document.addEventListener("dragover", stopEvent, false);',
+        'document.addEventListener("drop", function (e) {',
+        '  stopEvent(e);',
+        '  handleDataTransfer(e.dataTransfer);',
+        '});',
+        'document.body.addEventListener("paste", function (e) {',
+        '  handleDataTransfer(e.clipboardData);',
+        '});',
+        'function noteSubmit(text) {',
+        '  text = text || prompt("Enter a note:");',
+        '  if (!text) return;',
+        // fakemime as we split second part for the upload extension which is okay most of the times
+        '  upload([new Blob([text], { type: "fakemime/txt" })]);',
+        '}',
+        'function createFolder() {',
+        '  var name = prompt("Enter folder name:");',
+        '  if (!name) return;',
+        '  fetch(encodeURIComponent(name), { method: "PUT" })',
+        '    .then(function (x) { return x.text(); })',
+        '    .then(function () { location.reload(); });',
+        '}',
+        'function deleteFile(name) {',
+        '  fetch(encodeURIComponent(name), { method: "DELETE" })',
+        '    .then(function (x) { return x.text(); })',
+        '    .then(function () { location.reload(); });',
+        '}',
+        'function handleDataTransfer(dataTransfer) {',
+        '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
+            'width: 100%; height: 100%; opacity: .9; position: absolute; ' +
+            'background-color: white; text-align: center; padding-top: 10em;' +
+            '\'>Uploading&hellip;</pre>";',
+        '',
+        '  if (dataTransfer.items && dataTransfer.items[0] && dataTransfer.items[0].kind === "string") {',
+        '    dataTransfer.items[0].getAsString(noteSubmit);',
+        '    return;',
+        '  }',
+        '  var files = dataTransfer.items',
+        '    ? Array.from(dataTransfer.items).map(function (item) { return item.getAsFile(); })',
+        '    : dataTransfer.files;',
+        '  if (files.length === 0) {', // Needed for Safari, no image yet http://wkb.ug/170449
+        '    noteSubmit(dataTransfer.getData("text/plain"));',
+        '    return;',
+        '  }',
+        '  upload(files);',
+        '}',
+        'function upload(files) {',
+        '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
+            'width: 100%; height: 100%; opacity: .9; position: absolute; ' +
+            'background-color: white; text-align: center; padding-top: 10em;' +
+            '\'>Uploading&hellip;</pre>";',
+        '  Array.from(files).map(function (file) {',
+        '    return function () {',
+        '      return new Promise(function (resolve, reject) {',
+        '        var name = file.name;',
+        '        if (!name || name === "image.png")', // Firefox uses image.png for clipboard images
+        '          name = Date.now() + "." + file.type.split("/")[1];',
+        '        var formData = new FormData();',
+        '        formData.append("blob", file, "file");',
+        '        fetch(encodeURIComponent(name), { method: "POST", body: formData })',
+        '          .then(function (x) { return x.text(); })',
+        '          .catch(alert).then(resolve);',
+        '      });',
+        '    };',
+        '  }).reduce(function (promise, next) {',
+        '    return promise.then(next);',
+        '  }, Promise.resolve()).then(function () {',
+              // a little delay so users will notice the upload even if it happen so fast
+        '    setTimeout(function () { location.reload(); }, 200);',
+        '  });',
+        '}',
+        'var sortState = 1;',
+        'function sort(ord) {',
+        '  sortState = ord === sortState ? -ord : ord;',
+        '  var p = document.getElementsByTagName("tbody")[0];',
+        // http://stackoverflow.com/a/39569822
+        '  Array.from(p.children)',
+        '    .map(function (x) { return p.removeChild(x); })',
+        '    .sort(function (x, y) {',
+        '      x = x.getElementsByTagName("td");',
+        '      y = y.getElementsByTagName("td");',
+        '      var xDir = x[3].textContent === "Directory";',
+        '      var yDir = y[3].textContent === "Directory";',
+        '      if (xDir !== yDir) return xDir < yDir ? 1 : -1;',
+        '      if (x[0].textContent === "Parent Directory") return -1;',
+        '      if (y[0].textContent === "Parent Directory") return 1;',
+        '      if (ord === 2 || ord === 3)',
+        '        return +x[ord - 1].title > +y[ord - 1].title ? sortState : -sortState;',
+        '      return x[ord - 1].textContent > y[ord - 1].textContent ? sortState : -sortState;',
+        '    }).forEach(function (x) { p.appendChild(x); });',
+        '  Array.from(document.getElementsByTagName("th")).forEach(function (x, i) {',
+        '    x.textContent = x.textContent.replace(/.$/, i === ord - 1',
+        '      ? (sortState < 0 ? "↑" : "↓") : ":");',
+        '  });',
+        '}',
+        ' </script>', '</body>', '</html>'
+      ].join('\n'));
+    });
   });
 }).listen(port, localOnly ? '127.0.0.1' : '0.0.0.0');
 
