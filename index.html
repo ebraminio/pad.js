@@ -74,7 +74,7 @@ var contentTypes = {
   tar: 'application/x-tar', tgz: 'application/x-tar-gz', gz: 'application/x-gzip'
 };
 
-var port = +process.argv[2] || 9090;
+var port = +process.env.PORT || +process.argv[2] || 9090;
 
 function hasOption(name) {
   return process.argv.indexOf(name) !== -1;
@@ -136,7 +136,7 @@ if (hasOption('-h') || hasOption('--help')) {
   }
 
   if (req.method === 'PUT') {
-    fs.mkdir(path, function () {
+    return fs.mkdir(path, function () {
       res.end();
     });
     return;
@@ -431,6 +431,9 @@ process.on('uncaughtException', function (err) {
 <h3>Setup:</h3>
 <pre>curl pad.js.org | node</pre>
 
+<p>Or:</p>
+<pre>curl pad.js.org | PORT=9090 node</pre>
+
 <p>You should probably use this instead if you are using Debian/Ubuntu based Linux distribution:</p>
 <pre>curl pad.js.org | nodejs</pre>
 
@@ -450,16 +453,13 @@ pad [PORT]</pre>
 sudo mkdir /etc/ssl/pad.js
 sudo openssl genrsa -out "/etc/ssl/pad.js/pad.js.key" 2048
 sudo openssl req -new -key "/etc/ssl/pad.js/pad.js.key" -out "/etc/ssl/pad.js/pad.js.csr"
-sudo openssl x509 -req -days 365 \
-  -in "/etc/ssl/pad.js/pad.js.csr" \
-  -signkey "/etc/ssl/pad.js/pad.js.key" \
-  -out "/etc/ssl/pad.js/pad.js.crt"
+sudo openssl x509 -req -days 365 -in "/etc/ssl/pad.js/pad.js.csr" -signkey "/etc/ssl/pad.js/pad.js.key" -out "/etc/ssl/pad.js/pad.js.crt"
 </pre>
 Then run locally installed pad.js like:
 <pre>pad --https</pre>
-or: (needs <a href="https://github.com/nodejs/node/pull/13012">node.js 8</a>)
+or: (needs <a href="https://github.com/nodejs/node/pull/13012">Node.js 8</a>)
 <pre>curl pad.js.org | node - --https</pre>
-or: (currently works only on macOS)
+or: (works only on macOS, at least for now)
 <pre>curl pad.js.org | node /dev/stdin --https</pre>
 
 <h3>Show cases:</h3>
