@@ -198,7 +198,8 @@ if (hasOption('-h') || hasOption('--help')) {
       if (contentType === undefined) // fallback mime
         contentType = 'application/octet-stream';
 
-      if (contentType.indexOf('text/') === 0)
+      if (contentType.indexOf('text/') === 0 ||
+          contentType === 'application/json')
         contentType = contentType + '; charset=utf-8';
 
       if (noMime && !/^(audio|video)\//.test(contentType))
