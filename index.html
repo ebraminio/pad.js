@@ -130,7 +130,18 @@ if (hasOption('-h') || hasOption('--help')) {
     res.writeHead(409);
     return res.end('HTTP Error 400 Bad Request, error on parsing url');
   }
-  path = path.replace(/^[\/\\]+/, '').replace(/(^|[\/\\])\.\.([\/\\]|$)/g, '');
+  path = path.replace(/^[\/\\]+/, '').replace(/(^|[\/\\])\.\.(?=[\/\\]|$)/g, '');
+
+  try {
+    if (fs.realpathSync(path.replace(/[^\/\\]+$/, '')).indexOf(fs.realpathSync('./')) === -1) {
+      res.writeHead(404);
+      return res.end('HTTP 404 File not found, invalid path');
+    }
+  } catch (e) {
+    // very rare case
+    res.writeHead(404);
+    return res.end('HTTP 404 File not found');
+  }
 
   if (allowDelete && req.method === 'DELETE') {
     return fs.unlink('./' + path, function () {
@@ -164,7 +175,7 @@ if (hasOption('-h') || hasOption('--help')) {
 
       fs.writeFile('./' + path, buffer.slice(start, end), { flag: 'wx' }, function (err) {
         if (err) {
-          console.log(err.message);
+          console.error(err.message);
           res.writeHead(409);
           return res.end('HTTP Error 409 Conflict, a file with same name exists');
         }
@@ -179,15 +190,15 @@ if (hasOption('-h') || hasOption('--help')) {
     });
   }
 
-  return fs.lstat('./' + path, function (err, stat) {
+  return fs.stat('./' + path, function (err, stat) {
     if (err) {
-      console.log('"' + path + '" was requested but not found.');
+      console.error('"' + path + '" was requested but not found.');
       res.writeHead(404);
       return res.end('HTTP 404 File not found');
     }
 
     if (stat.isSymbolicLink()) {
-      console.log('"' + path + '" a symlink was requested but got denied.');
+      console.error('"' + path + '" a symlink was requested but got denied.');
       res.writeHead(403);
       return res.end('HTTP 403 Serving symlink is forbidden, at least for now');
     }
@@ -274,7 +285,7 @@ if (hasOption('-h') || hasOption('--help')) {
         (path === '' ? dir : ['..'].concat(dir)).map(function (x) {
           var fileStat;
           try {
-            fileStat = fs.lstatSync('./' + path + x);
+            fileStat = fs.statSync('./' + path + x);
           } catch (e) {
             res.writeHead(500);
             res.end('HTTP Error 500 Internal Error ' + e);
