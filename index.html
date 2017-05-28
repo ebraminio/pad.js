@@ -88,17 +88,21 @@ var noMime = hasOption('--no-mime');
 var noUpload = hasOption('--no-upload');
 var https = hasOption('--https');
 
+// 'wx' disallows file replace
+var writeFlag = hasOption('--replace') ? 'w' : 'wx';
+
 if (hasOption('-h') || hasOption('--help')) {
   console.log([
     'Usage: pad [PORT] [OPTION]...',
     '',
     'Options:',
     '      --local      run only on localhost',
-    '      --delete     allow file deletion',
     '      --no-cors    don\'t allow Cross-Origin Resource Sharing (CORS)',
     '      --no-info    hide extra info pad.js gives',
     '      --no-mime    don\'t add dangerous mime, for more safety',
     '      --no-upload  disable uploads',
+    '      --delete     allow file deletion',
+    '      --replace    allow file replace',
     '      --https      enable https',
     '  -h, --help       display this help and exit',
     '',
@@ -133,7 +137,7 @@ if (hasOption('-h') || hasOption('--help')) {
   path = path.replace(/^[\/\\]+/, '').replace(/(^|[\/\\])\.\.(?=[\/\\]|$)/g, '');
 
   try {
-    if (fs.realpathSync(path.replace(/[^\/\\]+$/, '')).indexOf(fs.realpathSync('./')) === -1) {
+    if (fs.realpathSync(path.replace(/[^\/\\]+$/, '')).indexOf(fs.realpathSync('./')) !== 0) {
       res.writeHead(404);
       return res.end('HTTP 404 File not found, invalid path');
     }
@@ -173,7 +177,7 @@ if (hasOption('-h') || hasOption('--help')) {
       for (var end = buffer.length - 1 - 2; end >= 0; --end)
         if (buffer[end] === 13 && buffer[end + 2] === 45) break;
 
-      fs.writeFile('./' + path, buffer.slice(start, end), { flag: 'wx' }, function (err) {
+      fs.writeFile('./' + path, buffer.slice(start, end), { flag: writeFlag }, function (err) {
         if (err) {
           console.error(err.message);
           res.writeHead(409);
