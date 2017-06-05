@@ -2,6 +2,7 @@
 'use strict';
 var fs = require('fs');
 var os = require('os');
+var url = require('url');
 
 // http://stackoverflow.com/a/38897674/1414809
 function fileSizeSI(size) {
@@ -117,8 +118,9 @@ if (hasOption('-h') || hasOption('--help')) {
     cert: fs.readFileSync('/etc/ssl/pad.js/pad.js.crt')
   }, requestListener);
 } : require('http').createServer)(function (req, res) {
-  if (noCors && req.headers['origin']) {
-    res.writeHead(405);
+  if (noCors && req.headers['origin'] &&
+      url.parse(req.headers['origin']).host !== req.headers['host']) {
+    res.writeHead(403);
     return res.end('HTTP Error 403 CORS is not allowed');
   }
 
