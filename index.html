@@ -262,13 +262,16 @@ if (hasOption('-h') || hasOption('--help')) {
         '<head>',
         ' <meta charset="utf-8">',
         ' <link rel="icon" href="data:,">',
-        ' <style>td:nth-child(3), th:nth-child(3) { text-align: right; } ' +
-          'th, td { padding-right: 14px; } th { padding-bottom: 3px; } ' +
-          'a, a:active { text-decoration: none; } ' +
-          'a:visited { color: #48468F; } ' +
-          'a:hover, a:focus { text-decoration: underline; color: red; }</style>',
+        ' <style>',
+          'td:nth-child(3), th:nth-child(3) { text-align: right; }',
+          'th, td { padding-right: 14px; } th { padding-bottom: 3px; }',
+          'a, a:active { text-decoration: none; }',
+          'a:visited { color: #48468F; }',
+          'a:hover, a:focus { text-decoration: underline; color: red; }',
+          'body { background-color: #F5F5F5; }',
+        ' </style>',
         '</head>',
-        '<body style="background-color: #F5F5F5;">',
+        '<body>',
         (noUpload ? '' : ' <div style="float: right">' +
           '<a onclick="createFolder()" href="#" title="Create a folder">📁</a> ' +
           '<a onclick="noteSubmit()" href="#" title="Create a note">📝</a> ' +
@@ -284,10 +287,12 @@ if (hasOption('-h') || hasOption('--help')) {
           ' padding-top: 10px; padding-bottom: 14px;">',
         '  <table ellpadding="0" cellspacing="0" style="' +
           'margin-left: 12px; font: 90% monospace; text-align: left;' +
-        '"><thead><tr><th onclick="sort(1)">Name↓</th>' +
-        '<th onclick="sort(2)">Last Modified:</th>' +
-        '<th onclick="sort(3)">Size:</th>' +
-        '<th onclick="sort(4)">Type:</th></tr></thead><tbody>',
+        '">', '   <thead>', '    <tr>',
+        '     <th onclick="sort(1)">Name↓</th>',
+        '     <th onclick="sort(2)">Last Modified:</th>',
+        '     <th onclick="sort(3)">Size:</th>',
+        '     <th onclick="sort(4)">Type:</th>',
+        '    </tr>', '   </thead>', '   <tbody>',
         (path === '' ? dir : ['..'].concat(dir)).map(function (x) {
           var fileStat;
           try {
@@ -427,8 +432,7 @@ if (hasOption('-h') || hasOption('--help')) {
         '    x.textContent = x.textContent.replace(/.$/, i === ord - 1',
         '      ? (sortState < 0 ? "↑" : "↓") : ":");',
         '  });',
-        '}',
-        ' </script>', '</body>', '</html>'
+        '}', ' </script>', '</body>', '</html>'
       ].join('\n'));
     });
   });
