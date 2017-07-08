@@ -472,6 +472,9 @@ process.on('uncaughtException', function (err) {
 <p>And try this on Windows:</p>
 <pre>powershell -Command "(iwr pad.js.org).Content | node"</pre>
 
+<p>Or this which doesn't need curl/powershell:</p>
+<pre>node -e "require('http').request({host:'pad.js.org'},function(r){var t='';r.on('data',function(c){t+=c});r.on('end',function(){eval(t)})}).end();"</pre>
+
 <p>Or this sets it up as a Docker daemon:</p>
 <pre>docker run --restart=always -v /files:/files --name pad.js -d -p 9090:9090 quay.io/ebraminio/pad.js</pre>
 
