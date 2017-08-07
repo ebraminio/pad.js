@@ -75,11 +75,24 @@ var contentTypes = {
   tar: 'application/x-tar', tgz: 'application/x-tar-gz', gz: 'application/x-gzip'
 };
 
-var port = +process.env.PORT || +process.argv[2] || 9090;
+var argv = process.argv;
+try {
+  var config = require('./config.json');
+  argv = argv.concat(config.argv || []);
+} catch (e) {}
 
 function hasOption(option) {
-  return process.argv.indexOf(option) !== -1;
+  return argv.indexOf(option) !== -1;
 }
+
+function getOption(option) {
+  var arg = argv.filter(function (arg) {
+    return arg.indexOf(option + '=') === 0;
+  })[0];
+  return arg ? arg.split('=')[1] : false;
+}
+
+var port = +process.env.PORT || +argv[2] || 9090;
 
 var localOnly = hasOption('--local');
 var allowDelete = hasOption('--delete');
@@ -92,16 +105,9 @@ var https = hasOption('--https');
 // 'wx' disallows file replace
 var writeFlag = hasOption('--replace') ? 'w' : 'wx';
 
-function getOption(option) {
-  var arg = process.argv.filter(function (arg) {
-    return arg.indexOf(option + '=') === 0;
-  })[0];
-  return arg ? arg.split('=')[1] : false
-}
-
 var userpass = getOption('--userpass');
 var prefix = getOption('--prefix');
-if (prefix[0] !== '/')
+if (prefix && prefix[0] !== '/')
   prefix = '/' + prefix;
 
 if (hasOption('-h') || hasOption('--help')) {
@@ -160,11 +166,13 @@ if (hasOption('-h') || hasOption('--help')) {
     res.writeHead(409);
     return res.end('HTTP Error 400 Bad Request, error on parsing url');
   }
-  if (path.indexOf(prefix) === 0) {
-    path = path.replace(prefix, '');
-  } else {
-    res.writeHead(302, { 'Location': prefix + req.url });
-    return res.end();
+  if (prefix) {
+    if (path.indexOf(prefix) === 0) {
+      path = path.replace(prefix, '');
+    } else {
+      res.writeHead(302, { 'Location': prefix + req.url });
+      return res.end();
+    }
   }
   path = path.replace(/^[\/\\]+/, '').replace(/(^|[\/\\])\.\.(?=[\/\\]|$)/g, '');
 
