@@ -19,6 +19,9 @@
     "url": "https://github.com/ebraminio/pad.js/issues"
   },
   "homepage": "http://pad.js.org",
+  "scripts": {
+    "start": "node index.html"
+  },
   "bin": {
     "pad.js": "./pad-cli",
     "pad": "./pad-cli"

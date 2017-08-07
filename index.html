@@ -77,8 +77,8 @@ var contentTypes = {
 
 var port = +process.env.PORT || +process.argv[2] || 9090;
 
-function hasOption(name) {
-  return process.argv.indexOf(name) !== -1;
+function hasOption(option) {
+  return process.argv.indexOf(option) !== -1;
 }
 
 var localOnly = hasOption('--local');
@@ -91,6 +91,18 @@ var https = hasOption('--https');
 
 // 'wx' disallows file replace
 var writeFlag = hasOption('--replace') ? 'w' : 'wx';
+
+function getOption(option) {
+  var arg = process.argv.filter(function (arg) {
+    return arg.indexOf(option + '=') === 0;
+  })[0];
+  return arg ? arg.split('=')[1] : false
+}
+
+var userpass = getOption('--userpass');
+var prefix = getOption('--prefix');
+if (prefix[0] !== '/')
+  prefix = '/' + prefix;
 
 if (hasOption('-h') || hasOption('--help')) {
   console.log([
@@ -107,6 +119,9 @@ if (hasOption('-h') || hasOption('--help')) {
     '      --https      enable https',
     '  -h, --help       display this help and exit',
     '',
+    '      --userpass=user:pass  run pad.js instance password protected',
+    '      --prefix=/prefix      expect pad.js to have the specified prefix',
+    '',
     'The PORT argument is an integer and optional, the default value is 9090'
   ].join('\n'));
   process.exit();
@@ -118,8 +133,17 @@ if (hasOption('-h') || hasOption('--help')) {
     cert: fs.readFileSync('/etc/ssl/pad.js/pad.js.crt')
   }, requestListener);
 } : require('http').createServer)(function (req, res) {
-  if (noCors && req.headers['origin'] &&
-      url.parse(req.headers['origin']).host !== req.headers['host']) {
+  if (userpass &&
+      new Buffer(
+        (req.headers.authorization || '').split(' ')[1] || '',
+        'base64'
+      ).toString() !== userpass) {
+    res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="nope"' });
+    return res.end('HTTP Error 401 Unauthorized: Access is denied');
+  }
+
+  if (noCors && req.headers.origin &&
+      url.parse(req.headers.origin).host !== req.headers.host) {
     res.writeHead(403);
     return res.end('HTTP Error 403 CORS is not allowed');
   }
@@ -135,6 +159,12 @@ if (hasOption('-h') || hasOption('--help')) {
   } catch (e) {
     res.writeHead(409);
     return res.end('HTTP Error 400 Bad Request, error on parsing url');
+  }
+  if (path.indexOf(prefix) === 0) {
+    path = path.replace(prefix, '');
+  } else {
+    res.writeHead(302, { 'Location': prefix + req.url });
+    return res.end();
   }
   path = path.replace(/^[\/\\]+/, '').replace(/(^|[\/\\])\.\.(?=[\/\\]|$)/g, '');
 
