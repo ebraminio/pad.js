@@ -109,6 +109,7 @@ var userpass = getOption('--userpass');
 var prefix = getOption('--prefix');
 if (prefix && prefix[0] !== '/')
   prefix = '/' + prefix;
+var servedir = getOption('--servedir');
 
 if (hasOption('-h') || hasOption('--help')) {
   console.log([
@@ -127,10 +128,15 @@ if (hasOption('-h') || hasOption('--help')) {
     '',
     '      --userpass=user:pass  run pad.js instance password protected',
     '      --prefix=/prefix      expect pad.js to have the specified prefix',
+    '      --servedir=/files     serve pad.js from the specified directory',
     '',
     'The PORT argument is an integer and optional, the default value is 9090'
   ].join('\n'));
   process.exit();
+}
+
+if (servedir) {
+  process.chdir(servedir);
 }
 
 (https ? function (requestListener) {
@@ -394,12 +400,12 @@ if (hasOption('-h') || hasOption('--help')) {
         'function createFolder() {',
         '  var name = prompt("Enter folder name:");',
         '  if (!name) return;',
-        '  fetch(encodeURIComponent(name), { method: "PUT" })',
+        '  fetch(encodeURIComponent(name), { method: "PUT", credentials: "include" })',
         '    .then(function (x) { return x.text(); })',
         '    .then(function () { location.reload(); });',
         '}',
         'function deleteFile(name) {',
-        '  fetch(encodeURIComponent(name), { method: "DELETE" })',
+        '  fetch(encodeURIComponent(name), { method: "DELETE", credentials: "include" })',
         '    .then(function (x) { return x.text(); })',
         '    .then(function () { location.reload(); });',
         '}',
@@ -435,7 +441,7 @@ if (hasOption('-h') || hasOption('--help')) {
         '          name = Date.now() + "." + file.type.split("/")[1];',
         '        var formData = new FormData();',
         '        formData.append("blob", file, "file");',
-        '        fetch(encodeURIComponent(name), { method: "POST", body: formData })',
+        '        fetch(encodeURIComponent(name), { method: "POST", body: formData, credentials: "include" })',
         '          .then(function (x) { return x.text(); })',
         '          .catch(alert).then(resolve);',
         '      });',
