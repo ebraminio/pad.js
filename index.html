@@ -101,6 +101,7 @@ var noInfo = hasOption('--no-info');
 var noMime = hasOption('--no-mime');
 var noUpload = hasOption('--no-upload');
 var https = hasOption('--https');
+var cmd = hasOption('--cmd');
 
 // 'wx' disallows file replace
 var writeFlag = hasOption('--replace') ? 'w' : 'wx';
@@ -123,6 +124,7 @@ if (hasOption('-h') || hasOption('--help')) {
     '      --no-upload  disable uploads',
     '      --delete     allow file deletion',
     '      --replace    allow file replace',
+    '      --cmd        enable executing commands',
     '      --https      enable https',
     '  -h, --help       display this help and exit',
     '',
@@ -178,6 +180,12 @@ if (servedir) {
     } else {
       res.writeHead(302, { 'Location': prefix + req.url });
       return res.end();
+    }
+  }
+  if (cmd) {
+    if (path.indexOf('/@cmd/') === 0) {
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+      return require('child_process').exec(path.split('/@cmd/')[1] + ' 2>&1').stdout.pipe(res);
     }
   }
   path = path.replace(/^[\/\\]+/, '').replace(/(^|[\/\\])\.\.(?=[\/\\]|$)/g, '');
@@ -379,7 +387,13 @@ if (servedir) {
             (noUpload ? '' : 'supports upload by drag-and-drop and copy-and-paste, ') +
             'your IP is: ' +
             req.connection.remoteAddress + ' ' +
-            (req.headers['x-forwarded-for'] || '') + '</div>', ' <script>',
+            (req.headers['x-forwarded-for'] || '') + '</div>' +
+            (cmd && path === ''
+              ? '<br><input placeholder="Enter your command here and press enter" ' +
+                ' onkeypress="if (event.which === 13) ' +
+                  'location.href += \'@cmd/\' + encodeURIComponent(this.value);"' +
+                  'style="float: right; width: 250px">'
+              : ''), ' <script>',
         '"use strict";',
         'function stopEvent(e) { e.stopPropagation(); e.preventDefault(); }',
         'document.addEventListener("dragleave", stopEvent, false);',
