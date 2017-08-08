@@ -391,7 +391,8 @@ if (servedir) {
             (cmd && path === ''
               ? '<br><input placeholder="Enter your command here and press enter" ' +
                 ' onkeypress="if (event.which === 13) ' +
-                  'location.href += \'@cmd/\' + encodeURIComponent(this.value);"' +
+                  'location.href = location.href.split(\'#\')[0] +' +
+                    '\'@cmd/\' + encodeURIComponent(this.value);"' +
                   'style="float: right; width: 250px">'
               : ''), ' <script>',
         '"use strict";',
