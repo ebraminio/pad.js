@@ -404,7 +404,8 @@ if (servedir) {
         '  handleDataTransfer(e.dataTransfer);',
         '});',
         'document.body.addEventListener("paste", function (e) {',
-        '  handleDataTransfer(e.clipboardData);',
+        '  if (e.target.nodeName !== "INPUT")', // don't interfere with input elements
+        '    handleDataTransfer(e.clipboardData);',
         '});',
         'function noteSubmit(text) {',
         '  text = text || prompt("Enter a note:");',
