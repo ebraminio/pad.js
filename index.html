@@ -316,36 +316,38 @@ if (servedir) {
         ' <link rel="icon" href="data:,">',
         ' <style>',
           'td:nth-child(3), th:nth-child(3) { text-align: right; }',
-          'th, td { padding-right: 14px; } th { padding-bottom: 3px; }',
+          'th, td { padding: 0 14px 0 0; } th { padding-bottom: 3px; }',
           'a, a:active { text-decoration: none; }',
+          'a { color: blue; }',
           'a:visited { color: #48468F; }',
           'a:hover, a:focus { text-decoration: underline; color: red; }',
           'body { background-color: #F5F5F5; }',
         ' </style>',
+        ' <title>Index of ' + escapeHtml('/' + path) + '</title>',
         '</head>',
         '<body>',
         (noUpload ? '' : ' <div style="float: right">' +
           '<a onclick="createFolder()" href="#" title="Create a folder">📁</a> ' +
           '<a onclick="noteSubmit()" href="#" title="Create a note">📝</a> ' +
           '<input type="file" onchange="upload(this.files)" multiple></div>'),
-        ' <h2 style="margin-bottom: 12px;">Index of ' +
-          ['<a href="/">.</a>'].concat(path.split('/').slice(0, -1).map(function (x, i, arr) {
+        ' <h2 style="margin-bottom: 12px;">Index of /' +
+          path.split('/').map(function (x, i, arr) {
             return '<a href="/' +
               quoteattr(arr.slice(0, i + 1).join('/')) + '/">' +
               escapeHtml(x) + '</a>';
-          })).join('/') + '/</h2>',
+          }).join('/') + '</h2>',
         ' <div style="background-color: white;' +
           ' border-top: 1px solid #646464; border-bottom: 1px solid #646464;' +
           ' padding-top: 10px; padding-bottom: 14px;">',
         '  <table ellpadding="0" cellspacing="0" style="' +
           'margin-left: 12px; font: 90% monospace; text-align: left;' +
         '">', '   <thead>', '    <tr>',
-        '     <th onclick="sort(1)">Name↓</th>',
-        '     <th onclick="sort(2)">Last Modified:</th>',
-        '     <th onclick="sort(3)">Size:</th>',
-        '     <th onclick="sort(4)">Type:</th>',
+        '     <th onclick="sort(1)"><a href="#">Name↓</a></a></th>',
+        '     <th onclick="sort(2)"><a href="#">Last Modified:</a></th>',
+        '     <th onclick="sort(3)"><a href="#">Size:</a></th>',
+        '     <th onclick="sort(4)"><a href="#">Type:</a></th>',
         '    </tr>', '   </thead>', '   <tbody>',
-        (path === '' ? dir : ['..'].concat(dir)).map(function (x) {
+        ['..'].concat(dir).map(function (x) {
           var fileStat;
           try {
             fileStat = fs.statSync('./' + path + x);
@@ -359,7 +361,7 @@ if (servedir) {
             name: x.toString(),
             ext: ext,
             size: fileStat.size,
-            date: fileStat.mtime.toString().split('(')[0],
+            date: new Date(fileStat.mtime),
             isDir: fileStat.isDirectory()
           };
         }).sort(function (x, y) {
@@ -371,10 +373,11 @@ if (servedir) {
               '<a href="#" onclick="deleteFile(this.title)" title="' +
                   quoteattr(x.name) + '" style="color: red">✗</a> ' : '') +
             '<a href="' + quoteattr(x.name) + (x.isDir ? '/' : '') + '">' +
-            escapeHtml(x.name === '..' ? 'Parent Directory' : x.name) +
-            '</a></td>\n    <td title="' + new Date(x.date).getTime() +
-            '">' + x.date + '</td>\n    <td title="' + x.size + '">' +
-            (x.isDir ? '-' : fileSizeSI(x.size)) + '</td>' +
+            escapeHtml(x.name) + '</a>' + (x.isDir ? '/' : '') +
+            '</td>\n    <td title="' + x.date.getTime() + '">' +
+            x.date.toISOString().replace('T', ' ').split('.')[0] +
+            '</td>\n    <td title="' + x.size + '">' +
+            (x.isDir ? '-&nbsp;&nbsp;' : fileSizeSI(x.size)) + '</td>' +
             '\n    <td>' + (x.isDir ? 'Directory' : contentTypes[x.ext] || '') +
             '</td>\n   </tr>';
         }).join('\n'),
