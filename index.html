@@ -96,6 +96,7 @@ var port = +process.env.PORT || +argv[2] || 9090;
 
 var localOnly = hasOption('--local');
 var allowDelete = hasOption('--delete');
+var allowRename = hasOption('--rename');
 var noCors = hasOption('--no-cors');
 var noInfo = hasOption('--no-info');
 var noMime = hasOption('--no-mime');
@@ -123,6 +124,7 @@ if (hasOption('-h') || hasOption('--help')) {
     '      --no-mime    don\'t add dangerous mime, for more safety',
     '      --no-upload  disable uploads',
     '      --delete     allow file deletion',
+    '      --rename     allow file rename',
     '      --replace    allow file replace',
     '      --cmd        enable executing commands',
     '      --https      enable https',
@@ -205,6 +207,20 @@ if (servedir) {
     return fs.unlink('./' + path, function () {
       return res.end();
     });
+  }
+
+  if (allowRename && req.method === 'PATCH') {
+    var parts = path.split('@');
+    var from = parts[0];
+    var to = parts[1];
+
+    try {
+      if (fs.realpathSync(to.replace(/[^\/\\]+$/, '')).indexOf(fs.realpathSync('./')) === 0) {
+        return fs.rename('./' + from, './' + to, function () {
+          return res.end();
+        });
+      } else return res.end('');
+    } catch (e) { return res.end(''); }
   }
 
   if (req.method === 'PUT') {
@@ -370,9 +386,13 @@ if (servedir) {
             ? (x.isDir < y.isDir ? 1 : -1)
             : (x.name > y.name ? 1 : -1);
         }).map(function (x) {
-          return '   <tr>\n    <td>' + (allowDelete ?
-              '<a href="#" onclick="deleteFile(this.title); return false;" title="' +
-                  quoteattr(x.name) + '" style="color: red">✗</a> ' : '') +
+          return '   <tr>\n    <td>' +
+            (allowRename && x.name !== '..' && path === '' ?
+              '<a href="#" onclick="renameFile(this); return false;" title="Rename"' +
+              ' style="color: blue">✍</a> ' : '') +
+            (allowDelete && x.name !== '..' ?
+              '<a href="#" onclick="deleteFile(this); return false;" title="Delete"' +
+              ' style="color: red">✗</a> ' : '') +
             '<a href="' + quoteattr(x.name) + (x.isDir ? '/' : '') + '">' +
             escapeHtml(x.name) + '</a>' + (x.isDir ? '/' : '') +
             '</td>\n    ' +
@@ -425,10 +445,28 @@ if (servedir) {
         '    .then(function (x) { return x.text(); })',
         '    .then(function () { location.reload(); });',
         '}',
-        'function deleteFile(name) {',
+        'function deleteFile(element) {',
+        '  var name = element.parentElement.lastElementChild.textContent;',
         '  fetch(encodeURIComponent(name), { method: "DELETE", credentials: "include" })',
         '    .then(function (x) { return x.text(); })',
         '    .then(function () { location.reload(); });',
+        '}',
+        'function renameFile(element) {',
+        '  var entry = element.parentElement.lastElementChild;',
+        '  var from = entry.textContent;',
+        '  entry.contentEditable = true;',
+        '  entry.focus();',
+        '  entry.onkeypress = function (e) {',
+        '    if (e.which !== 13) return;',
+        '    var to = entry.textContent;',
+			  '    entry.blur();',
+        '    fetch(encodeURIComponent(from) + "@" + encodeURIComponent(to), {',
+        '      method: "PATCH",',
+        '      credentials: "include"',
+        '    })',
+        '      .then(function (x) { return x.text(); })',
+        '      .then(function () { location.reload(); });',
+        '  };',
         '}',
         'function handleDataTransfer(dataTransfer) {',
         '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
