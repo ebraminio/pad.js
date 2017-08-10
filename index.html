@@ -35,7 +35,7 @@ var contentTypes = {
   htc: 'text/x-component', png: 'image/png', tif: 'image/tiff',
   tiff: 'image/tiff', wbmp: 'image/vnd.wap.wbmp', ico: 'image/x-icon',
   jng: 'image/x-jng', bmp: 'image/x-ms-bmp', svg: 'image/svg+xml',
-  svgz: 'image/svg+xml', webp: 'image/webp',
+  svgz: 'image/svg+xml', webp: 'image/webp', md: 'text/markdown',
   woff: 'application/font-woff', jar: 'application/java-archive',
   war: 'application/java-archive', ear: 'application/java-archive',
   json: 'application/json', hqx: 'application/mac-binhex40',
@@ -250,7 +250,8 @@ if (servedir) {
 
   return fs.stat('./' + path, function (err, stat) {
     if (err) {
-      console.error('"' + path + '" was requested but not found.');
+      if (path.indexOf('favicon.ico') === -1) // don't show error for lack of favicon
+        console.error('"' + path + '" was requested but not found.');
       res.writeHead(404);
       return res.end('HTTP 404 File not found');
     }
@@ -327,8 +328,8 @@ if (servedir) {
         '</head>',
         '<body>',
         (noUpload ? '' : ' <div style="float: right">' +
-          '<a onclick="createFolder()" href="#" title="Create a folder">📁</a> ' +
-          '<a onclick="noteSubmit()" href="#" title="Create a note">📝</a> ' +
+          '<a onclick="createFolder(); return false;" href="#" title="Create a folder">📁</a> ' +
+          '<a onclick="noteSubmit(); return false;" href="#" title="Create a note">📝</a> ' +
           '<input type="file" onchange="upload(this.files)" multiple></div>'),
         ' <h2 style="margin-bottom: 12px;">Index of /' +
           path.split('/').map(function (x, i, arr) {
@@ -342,10 +343,10 @@ if (servedir) {
         '  <table ellpadding="0" cellspacing="0" style="' +
           'margin-left: 12px; font: 90% monospace; text-align: left;' +
         '">', '   <thead>', '    <tr>',
-        '     <th onclick="sort(1)"><a href="#">Name↓</a></a></th>',
-        '     <th onclick="sort(2)"><a href="#">Last Modified:</a></th>',
-        '     <th onclick="sort(3)"><a href="#">Size:</a></th>',
-        '     <th onclick="sort(4)"><a href="#">Type:</a></th>',
+        '     <th onclick="sort(1); return false;"><a href="#">Name↓</a></a></th>',
+        '     <th onclick="sort(2); return false;"><a href="#">Last Modified:</a></th>',
+        '     <th onclick="sort(3); return false;"><a href="#">Size:</a></th>',
+        '     <th onclick="sort(4); return false;"><a href="#">Type:</a></th>',
         '    </tr>', '   </thead>', '   <tbody>',
         ['..'].concat(dir).map(function (x) {
           var fileStat;
@@ -370,13 +371,15 @@ if (servedir) {
             : (x.name > y.name ? 1 : -1);
         }).map(function (x) {
           return '   <tr>\n    <td>' + (allowDelete ?
-              '<a href="#" onclick="deleteFile(this.title)" title="' +
+              '<a href="#" onclick="deleteFile(this.title); return false;" title="' +
                   quoteattr(x.name) + '" style="color: red">✗</a> ' : '') +
             '<a href="' + quoteattr(x.name) + (x.isDir ? '/' : '') + '">' +
             escapeHtml(x.name) + '</a>' + (x.isDir ? '/' : '') +
-            '</td>\n    <td title="' + x.date.getTime() + '">' +
-            x.date.toISOString().replace('T', ' ').split('.')[0] +
-            '</td>\n    <td title="' + x.size + '">' +
+            '</td>\n    ' +
+              (x.name === '..' ? '<td></td>' :
+                '<td title="' + x.date.getTime() + '">' +
+                x.date.toISOString().replace('T', ' ').split('.')[0] + '</td>') +
+            '\n    <td title="' + x.size + '">' +
             (x.isDir ? '-&nbsp;&nbsp;' : fileSizeSI(x.size)) + '</td>' +
             '\n    <td>' + (x.isDir ? 'Directory' : contentTypes[x.ext] || '') +
             '</td>\n   </tr>';
@@ -394,8 +397,7 @@ if (servedir) {
             (cmd && path === ''
               ? '<br><input placeholder="Enter your command here and press enter" ' +
                 ' onkeypress="if (event.which === 13) ' +
-                  'location.href = location.href.split(\'#\')[0] +' +
-                    '\'@cmd/\' + encodeURIComponent(this.value);"' +
+                  'location.href += \'@cmd/\' + encodeURIComponent(this.value);"' +
                   'style="float: right; width: 250px">'
               : ''), ' <script>',
         '"use strict";',
@@ -492,10 +494,11 @@ if (servedir) {
         '      return x[ord - 1].textContent > y[ord - 1].textContent ? sortState : -sortState;',
         '    }).forEach(function (x) { p.appendChild(x); });',
         '  Array.from(document.getElementsByTagName("th")).forEach(function (x, i) {',
-        '    x.textContent = x.textContent.replace(/.$/, i === ord - 1',
+        '    x.firstChild.textContent = x.firstChild.textContent.replace(/.$/, i === ord - 1',
         '      ? (sortState < 0 ? "↑" : "↓") : ":");',
         '  });',
-        '}', ' </script>', '</body>', '</html>'
+        '}',
+        ' </script>', '</body>', '</html>'
       ].join('\n'));
     });
   });
