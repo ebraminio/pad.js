@@ -389,7 +389,7 @@ if (servedir) {
           return '   <tr>\n    <td>' +
             (allowRename && x.name !== '..' && path === '' ?
               '<a href="#" onclick="renameFile(this); return false;" title="Rename"' +
-              ' style="color: blue">✍</a> ' : '') +
+              ' style="color: green; line-height: 0;">✍</a> ' : '') +
             (allowDelete && x.name !== '..' ?
               '<a href="#" onclick="deleteFile(this); return false;" title="Delete"' +
               ' style="color: red">✗</a> ' : '') +
@@ -457,15 +457,19 @@ if (servedir) {
         '  entry.contentEditable = true;',
         '  entry.focus();',
         '  entry.onkeypress = function (e) {',
+        '    if (e.which === 27) entry.blur();',
         '    if (e.which !== 13) return;',
+        '    e.preventDefault();',
         '    var to = entry.textContent;',
-			  '    entry.blur();',
         '    fetch(encodeURIComponent(from) + "@" + encodeURIComponent(to), {',
         '      method: "PATCH",',
         '      credentials: "include"',
         '    })',
         '      .then(function (x) { return x.text(); })',
         '      .then(function () { location.reload(); });',
+        '  };',
+        '  entry.onblur = function (e) {',
+        '    entry.contentEditable = false;',
         '  };',
         '}',
         'function handleDataTransfer(dataTransfer) {',
