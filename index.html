@@ -108,6 +108,9 @@ var cmd = hasOption('--cmd');
 var writeFlag = hasOption('--replace') ? 'w' : 'wx';
 
 var userpass = getOption('--userpass');
+// early convert the given username and password pair to base64
+if (userpass) userpass = new Buffer(userpass).toString('base64');
+
 var prefix = getOption('--prefix');
 if (prefix && prefix[0] !== '/')
   prefix = '/' + prefix;
@@ -149,11 +152,7 @@ if (servedir) {
     cert: fs.readFileSync('/etc/ssl/pad.js/pad.js.crt')
   }, requestListener);
 } : require('http').createServer)(function (req, res) {
-  if (userpass &&
-      new Buffer(
-        (req.headers.authorization || '').split(' ')[1] || '',
-        'base64'
-      ).toString() !== userpass) {
+  if (userpass && ((req.headers.authorization || '').split(' ')[1] || '') !== userpass) {
     res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="nope"' });
     return res.end('HTTP Error 401 Unauthorized: Access is denied');
   }
