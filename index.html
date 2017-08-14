@@ -512,7 +512,7 @@ if (servedir) {
         '        if (!name || name === "image.png")', // Firefox uses image.png for clipboard images
         '          name = Date.now() + "." + file.type.split("/")[1];',
         '        var formData = new FormData();',
-        '        formData.append("blob", file, "file");',
+        '        formData.append("blob", file);',
         '        document.getElementById("over").innerHTML += "<div>" + name + "&hellip;</div>";',
         '        xhr(resolve, encodeURIComponent(name), "POST", formData, function (e) {',
         '          document.getElementById("bar").style.width = e.loaded / e.total * 100 + "%";',
@@ -627,7 +627,7 @@ fetch('http://127.0.0.1:9090/a.txt')
 <u>upload a text file:</u>
 <pre>
 var formData = new FormData();
-formData.append('blob', new Blob(['STRING YOU LIKE TO SAVE']), 'file');
+formData.append('blob', new Blob(['STRING YOU LIKE TO SAVE']));
 fetch('http://127.0.0.1:9090/a.txt', { method: 'POST', body: formData })
   .then(x => x.text())
   .then(console.log);
@@ -640,7 +640,7 @@ var canvas = document.createElement('canvas'), context = canvas.getContext('2d')
 canvas.width = 200; canvas.height = 200; context.fillStyle = 'blue'; context.fillRect(0, 0, 200, 200);
 canvas.toBlob(function (blob) {
   var formData = new FormData();
-  formData.append('blob', blob, 'file');
+  formData.append('blob', blob);
   fetch('http://127.0.0.1:9090/a.png', { method: 'POST', body: formData })
     .then(x => x.text())
     .then(console.log);
