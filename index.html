@@ -415,9 +415,8 @@ if (servedir) {
             (req.headers['x-forwarded-for'] || '') + '</div>' +
             (cmd && path === ''
               ? '<br><input placeholder="Enter your command here and press enter" ' +
-                ' onkeypress="if (event.which === 13) ' +
-                  'location.href += \'@cmd/\' + encodeURIComponent(this.value);"' +
-                  'style="float: right; width: 250px">'
+                'style="float: right; width: 250px" ' +
+                'onkeypress="if (event.which === 13) location.href += \'@cmd/\' + this.value;">'
               : ''), ' <script>',
         '"use strict";',
         'document.addEventListener("dragover", function (e) {',
