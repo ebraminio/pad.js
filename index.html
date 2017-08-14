@@ -203,8 +203,20 @@ if (servedir) {
   }
 
   if (allowDelete && req.method === 'DELETE') {
-    return fs.unlink('./' + path, function () {
-      return res.end();
+    return fs.stat('./' + path, function (err, stats) {
+      if (err) {
+        console.error(err.message);
+        return res.end('HTTP 404 File not found, invalid path to delete');
+      }
+      if (stats.isDirectory()) {
+        return fs.rmdir('./' + path, function () {
+          res.end();
+        });
+      } else {
+        return fs.unlink('./' + path, function () {
+          res.end();
+        });
+      }
     });
   }
 
@@ -263,7 +275,7 @@ if (servedir) {
     });
   }
 
-  return fs.stat('./' + path, function (err, stat) {
+  return fs.stat('./' + path, function (err, stats) {
     if (err) {
       if (path.indexOf('favicon.ico') === -1) // don't show error for lack of favicon
         console.error('"' + path + '" was requested but not found.');
@@ -271,13 +283,13 @@ if (servedir) {
       return res.end('HTTP 404 File not found');
     }
 
-    if (stat.isSymbolicLink()) {
+    if (stats.isSymbolicLink()) {
       console.error('"' + path + '" a symlink was requested but got denied.');
       res.writeHead(403);
       return res.end('HTTP 403 Serving symlink is forbidden, at least for now');
     }
 
-    if (!stat.isDirectory()) { // i.e. is a file
+    if (!stats.isDirectory()) { // i.e. is a file
       var contentType = contentTypes[path.replace(/^.*\.(.*)$/, "$1")];
 
       if (contentType === undefined) // fallback mime
@@ -295,11 +307,11 @@ if (servedir) {
         var parts = req.headers.range.replace(/bytes=/, "").split("-");
 
         var start = +parts[0];
-        var end = parts[1] ? +parts[1] : stat.size - 1;
+        var end = parts[1] ? +parts[1] : stats.size - 1;
         console.log('"' + path + '" SERVED! RANGE: ' + start + ' - ' + end);
 
         res.writeHead(206, {
-          'Content-Range': 'bytes ' + start + '-' + end + '/' + stat.size,
+          'Content-Range': 'bytes ' + start + '-' + end + '/' + stats.size,
           'Accept-Ranges': 'bytes',
           'Content-Length': (end - start) + 1,
           'Content-Type': contentType,
@@ -310,7 +322,7 @@ if (servedir) {
 
       console.log('"' + path + '" SERVED!');
       res.writeHead(200, {
-        'Content-Length': stat.size,
+        'Content-Length': stats.size,
         'Content-Type': contentType,
         'Access-Control-Allow-Origin': '*'
       });
@@ -364,9 +376,9 @@ if (servedir) {
         '     <th onclick="sort(4); return false;"><a href="#">Type:</a></th>',
         '    </tr>', '   </thead>', '   <tbody>',
         ['..'].concat(dir).map(function (x) {
-          var fileStat;
+          var fileStats;
           try {
-            fileStat = fs.statSync('./' + path + x);
+            fileStats = fs.statSync('./' + path + x);
           } catch (e) {
             res.writeHead(500);
             res.end('HTTP Error 500 Internal Error ' + e);
@@ -376,9 +388,9 @@ if (servedir) {
           return {
             name: x.toString(),
             ext: ext,
-            size: fileStat.size,
-            date: new Date(fileStat.mtime),
-            isDir: fileStat.isDirectory()
+            size: fileStats.size,
+            date: new Date(fileStats.mtime),
+            isDir: fileStats.isDirectory()
           };
         }).sort(function (x, y) {
           return x.isDir !== y.isDir
@@ -389,7 +401,7 @@ if (servedir) {
             (allowRename && x.name !== '..' && path === '' ?
               '<a href="#" onclick="renameFile(this); return false;" title="Rename"' +
               ' style="color: green; line-height: 0;">✍</a> ' : '') +
-            (allowDelete && x.name !== '..' && !x.isDir ?
+            (allowDelete && x.name !== '..' ?
               '<a href="#" onclick="deleteFile(this); return false;" title="Delete"' +
               ' style="color: red">✗</a> ' : '') +
             '<a href="' + quoteattr(x.name) + (x.isDir ? '/' : '') + '">' +
