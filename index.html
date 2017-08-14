@@ -423,7 +423,7 @@ if (servedir) {
         '  e.stopPropagation(); e.preventDefault();',
         '  if (!document.getElementById("over"))',
         '    document.body.innerHTML += "<pre id=\'over\' style=\'top: 0; right: 0; ' +
-              'width: 100%; height: 100%; opacity: .9; position: absolute; ' +
+              'width: 100%; height: 100%; opacity: .9; position: absolute; margin: 0; ' +
               'background-color: white; text-align: center; padding-top: 10em;' +
               '\'>&hellip;drop anything here&hellip;</pre>";',
         '}, false);',
@@ -483,11 +483,6 @@ if (servedir) {
         '  };',
         '}',
         'function handleDataTransfer(dataTransfer) {',
-        '  document.body.innerHTML += "<pre style=\'top: 0; right: 0; ' +
-            'width: 100%; height: 100%; opacity: .9; position: absolute; ' +
-            'background-color: white; text-align: center; padding-top: 10em;' +
-            '\'>Uploading&hellip;</pre>";',
-        '',
         '  if (dataTransfer.items && dataTransfer.items[0] && dataTransfer.items[0].kind === "string") {',
         '    dataTransfer.items[0].getAsString(noteSubmit);',
         '    return;',
@@ -502,10 +497,14 @@ if (servedir) {
         '  upload(files);',
         '}',
         'function upload(files) {',
+        '  ',
         '  document.body.innerHTML += "<pre id=\'over\' style=\'top: 0; right: 0; ' +
-            'width: 100%; height: 100%; opacity: .9; position: absolute; ' +
+            'width: 100%; height: 100%; opacity: .9; position: absolute; margin: 0; ' +
             'background-color: white; text-align: center; padding-top: 10em;' +
-            '\'></pre>";',
+            '\'>Uploading&hellip;<br>' +
+            '<div style=\'margin: 0 auto; width: 200px; background-color: #DDD\'>' +
+            '<div id=\'bar\' style=\'height: 30px; background-color: #4CAF50\'>' +
+            '</div></div></pre>";',
         '  Array.from(files).map(function (file) {',
         '    return function () {',
         '      return new Promise(function (resolve, reject) {',
@@ -514,11 +513,7 @@ if (servedir) {
         '          name = Date.now() + "." + file.type.split("/")[1];',
         '        var formData = new FormData();',
         '        formData.append("blob", file, "file");',
-        '        var over = document.getElementById("over");',
-        '        over.innerHTML = "Uploading&hellip;<br>" + name + ',
-        '           "<div style=\'margin: 0 auto; width: 200px; background-color: #DDD\'>" + ',
-        '           "<div id=\'bar\' style=\'height: 30px; background-color: #4CAF50\'>" + ',
-        '           "</div></div>";',
+        '        document.getElementById("over").innerHTML += "<div>" + name + "&hellip;</div>";',
         '        xhr(resolve, encodeURIComponent(name), "POST", formData, function (e) {',
         '          document.getElementById("bar").style.width = e.loaded / e.total * 100 + "%";',
         '        });',
