@@ -194,12 +194,12 @@ if (servedir) {
   try {
     if (fs.realpathSync(path.replace(/[^\/\\]+$/, '')).indexOf(fs.realpathSync('./')) !== 0) {
       res.writeHead(404);
-      return res.end('HTTP 404 File not found, invalid path');
+      return res.end('HTTP Error 404 File not found, invalid path');
     }
   } catch (e) {
     // very rare case
     res.writeHead(404);
-    return res.end('HTTP 404 File not found');
+    return res.end('HTTP Error 404 File not found');
   }
 
   if (allowDelete && req.method === 'DELETE') {
@@ -209,14 +209,21 @@ if (servedir) {
         return res.end('HTTP 404 File not found, invalid path to delete');
       }
       if (stats.isDirectory()) {
-        return fs.rmdir('./' + path, function () {
-          res.end();
-        });
-      } else {
-        return fs.unlink('./' + path, function () {
-          res.end();
+        return fs.rmdir('./' + path, function (err) {
+          if (err) {
+            res.writeHead(500);
+            return res.end('HTTP Error 500 ' + err.message);
+          }
+          res.end('OK');
         });
       }
+      return fs.unlink('./' + path, function () {
+        if (err) {
+          res.writeHead(500);
+          return res.end('HTTP Error 500 ' + err.message);
+        }
+        res.end();
+      });
     });
   }
 
@@ -266,11 +273,11 @@ if (servedir) {
         }
 
         console.log('"' + path + '" SAVED!');
-        res.writeHead(200, 'OK', {
+        res.writeHead(200, {
           'Content-Type' : 'text/plain',
           'Access-Control-Allow-Origin': '*'
         });
-        return res.end('Done');
+        return res.end('OK');
       });
     });
   }
@@ -382,7 +389,7 @@ if (servedir) {
           } catch (e) {
             res.writeHead(500);
             res.end('HTTP Error 500 Internal Error ' + e);
-            return { name: '' };
+            return { name: e.message };
           }
           var ext = x.replace(/^.*\.(.*)$/, "$1");
           return {
@@ -461,7 +468,10 @@ if (servedir) {
         'function request(callback, url, method, body, onProgress) {',
         '  var xhr = new XMLHttpRequest();',
         '  xhr.open(method, url);',
-        '  xhr.onload = function (e) { callback(e.target.responseText); }',
+        '  xhr.onload = function (e) {',
+        '    if (status !== 200) alert(e.target.responseText);',
+        '    callback(e.target.responseText);',
+        '  };',
         '  xhr.onerror = function (err) { alert(err); callback(err); };',
         '  if (xhr.upload && onProgress)',
         '    xhr.upload.onprogress = onProgress;',
