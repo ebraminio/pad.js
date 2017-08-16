@@ -168,7 +168,7 @@ if (servedir) {
     return res.end('HTTP Error 405 Method Not Allowed');
   }
 
-  var path = req.url;
+  var path = req.url.split('?')[0];
   try {
     path = decodeURI(path);
   } catch (e) {
