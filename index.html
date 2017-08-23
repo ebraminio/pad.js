@@ -470,7 +470,7 @@ if (servedir) {
         '  var xhr = new XMLHttpRequest();',
         '  xhr.open(method, url);',
         '  xhr.onload = function (e) {',
-        '    if (status !== 200) alert(e.target.responseText);',
+        '    if (xhr.status !== 200) alert(e.target.responseText);',
         '    callback(e.target.responseText);',
         '  };',
         '  xhr.onerror = function (err) { alert(err); callback(err); };',
