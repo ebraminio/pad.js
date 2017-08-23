@@ -3,6 +3,7 @@
 var fs = require('fs');
 var os = require('os');
 var url = require('url');
+var exec = require('child_process').exec;
 
 // http://stackoverflow.com/a/38897674/1414809
 function fileSizeSI(size) {
@@ -172,7 +173,7 @@ if (servedir) {
   try {
     path = decodeURI(path);
   } catch (e) {
-    res.writeHead(409);
+    res.writeHead(400);
     return res.end('HTTP Error 400 Bad Request, error on parsing url');
   }
   if (prefix) {
@@ -186,7 +187,7 @@ if (servedir) {
   if (cmd) {
     if (path.indexOf('/@cmd/') === 0) {
       res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-      return require('child_process').exec(path.split('/@cmd/')[1] + ' 2>&1').stdout.pipe(res);
+      return exec(decodeURI(req.url).split('/@cmd/')[1] + ' 2>&1').stdout.pipe(res);
     }
   }
   path = path.replace(/^[\/\\]+/, '').replace(/(^|[\/\\])\.\.(?=[\/\\]|$)/g, '');
