@@ -613,8 +613,8 @@ process.on('uncaughtException', function (err) {
 <p>Or this which doesn't need curl/powershell:</p>
 <pre>node -e "require('http').request({host:'pad.js.org'},function(r){var t='';r.on('data',function(c){t+=c});r.on('end',function(){eval(t)})}).end();"</pre>
 
-<p>Or this sets it up as a Docker daemon:</p>
-<pre>docker run --restart=always -v /files:/files --name pad.js -d -p 9090:9090 quay.io/ebraminio/pad.js</pre>
+<p>Or this sets it up as a Docker daemon which exposes pad.js on 7070 of all your interfaces:</p>
+<pre>docker run --restart=always -v /files:/files --name pad.js -d -p 7070:9090 quay.io/ebraminio/pad.js</pre>
 
 <p>Use this if you want to have it as a terminal tool:
   <u>(please install nodejs-legacy on Debian before the installation)</u></p>
