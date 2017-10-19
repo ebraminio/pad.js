@@ -102,6 +102,7 @@ var noCors = hasOption('--no-cors');
 var noInfo = hasOption('--no-info');
 var noMime = hasOption('--no-mime');
 var noUpload = hasOption('--no-upload');
+var noIndex = hasOption('--no-index');
 var https = hasOption('--https');
 var cmd = hasOption('--cmd');
 
@@ -129,6 +130,7 @@ if (hasOption('-h') || hasOption('--help')) {
     '      --no-info    hide extra info pad.js gives',
     '      --no-mime    don\'t add dangerous mime, for more safety',
     '      --no-upload  disable uploads',
+    '      --no-index   disable index creation for folders',
     '      --delete     allow file deletion',
     '      --rename     allow file rename',
     '      --replace    allow file replace',
@@ -358,6 +360,12 @@ if (timeout !== -1) {
     if (!req.url.match(/\/$/)) {
       res.writeHead(302, { 'Location': req.url + '/' });
       return res.end();
+    }
+
+    if (noIndex) {
+      res.writeHead(403);
+      console.error('"' + path + '" index was requested but rejected due to configs.');
+      return res.end('Access is denied');
     }
 
     return fs.readdir('./' + path, function (err, dir) {
