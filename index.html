@@ -117,6 +117,8 @@ if (prefix && prefix[0] !== '/')
   prefix = '/' + prefix;
 var servedir = getOption('--servedir');
 
+var timeout = +getOption('--timeout') || 10;
+
 if (hasOption('-h') || hasOption('--help')) {
   console.log([
     'Usage: pad [PORT] [OPTION]...',
@@ -137,8 +139,11 @@ if (hasOption('-h') || hasOption('--help')) {
     '      --userpass=user:pass  run pad.js instance password protected',
     '      --prefix=/prefix      expect pad.js to have the specified prefix',
     '      --servedir=/files     serve pad.js from the specified directory',
+    '      --timeout=10          minutes to exit if no request is issued,',
+    '                            default is 10, -1 to disable',
     '',
-    'The PORT argument is an integer and optional, the default value is 9090'
+    'The PORT argument is an integer and optional, its default value is 9090',
+    'and can be set from environment variables also'
   ].join('\n'));
   process.exit();
 }
@@ -147,12 +152,24 @@ if (servedir) {
   process.chdir(servedir);
 }
 
+var lastActivityTimestamp = Date.now();
+if (timeout !== -1) {
+  setInterval(function () {
+    if (Date.now() - lastActivityTimestamp > timeout * 60 * 1000) {
+      console.log('pad.js exited due to inactivity, set --timeout=-1 to disable this feature.');
+      process.exit();
+    }
+  }, 60 * 1000);
+}
+
 (https ? function (requestListener) {
   return require('https').createServer({
     key: fs.readFileSync('/etc/ssl/pad.js/pad.js.key'),
     cert: fs.readFileSync('/etc/ssl/pad.js/pad.js.crt')
   }, requestListener);
 } : require('http').createServer)(function (req, res) {
+  lastActivityTimestamp = Date.now();
+
   if (userpass && ((req.headers.authorization || '').split(' ')[1] || '') !== userpass) {
     res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="nope"' });
     return res.end('HTTP Error 401 Unauthorized: Access is denied');
