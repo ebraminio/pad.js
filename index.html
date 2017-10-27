@@ -622,6 +622,9 @@ process.on('uncaughtException', function (err) {
 <p>Or:</p>
 <pre>curl pad.js.org | PORT=9090 node</pre>
 
+<p>Or without curl:</p>
+<pre>wget -O- pad.js.org | node</pre>
+
 <p>You should probably use this instead if you are using Debian/Ubuntu based Linux distribution:</p>
 <pre>curl pad.js.org | nodejs</pre>
 
