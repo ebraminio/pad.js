@@ -166,7 +166,7 @@ if (timeout !== -1) {
   }, 60 * 1000);
 }
 
-(https ? function (requestListener) {
+var server = (https ? function (requestListener) {
   return require('https').createServer({
     key: fs.readFileSync('/etc/ssl/pad.js/pad.js.key'),
     cert: fs.readFileSync('/etc/ssl/pad.js/pad.js.crt')
@@ -627,21 +627,40 @@ if (timeout !== -1) {
       ].join('\n'));
     });
   });
-}).listen(port, localOnly ? '127.0.0.1' : '0.0.0.0');
+});
 
-console.log('pad.js is listening on ' + port +
-  ' port of ' + (localOnly ? 'local' : 'all') + ' network interface(s)');
-var ifs = os.networkInterfaces();
-// http://stackoverflow.com/a/38929214/1414809
-console.log('(' + Object.keys(ifs)
-  .map(function (x) {
-    return [x, ifs[x].filter(function (x) { return x.family === 'IPv4'; })[0]];
-  })
-  .filter(function (x) { return x[1]; })
-  .filter(function (x) { return !localOnly || (x[1].address === '127.0.0.1'); })
-  .map(function (x) { return x[0] + ': ' + (https ? 'https' : 'http') + '://' +
-    x[1].address + ':' + port; })
-  .join(', ') + ')');
+function listen(port) {
+  // https://stackoverflow.com/a/19129614
+  var canary = require('net').createServer();
+  canary.once('error', function (err) {
+    if (err.code === 'EADDRINUSE') {
+      console.log('Apparently :' + port + ' is busy, let\'s try the next port');
+      listen(++port);
+    }
+  });
+
+  canary.once('listening', function () {
+    canary.close();
+    server.listen(port, localOnly ? '127.0.0.1' : '0.0.0.0');
+
+    console.log('pad.js is listening on ' + port +
+      ' port of ' + (localOnly ? 'local' : 'all') + ' network interface(s)');
+    var ifs = os.networkInterfaces();
+    // http://stackoverflow.com/a/38929214/1414809
+    console.log('(' + Object.keys(ifs)
+      .map(function (x) {
+        return [x, ifs[x].filter(function (x) { return x.family === 'IPv4'; })[0]];
+      })
+      .filter(function (x) { return x[1]; })
+      .filter(function (x) { return !localOnly || (x[1].address === '127.0.0.1'); })
+      .map(function (x) { return x[0] + ': ' + (https ? 'https' : 'http') + '://' +
+        x[1].address + ':' + port; })
+      .join(', ') + ')');
+  });
+
+  canary.listen(port, localOnly ? '127.0.0.1' : '0.0.0.0');
+}
+listen(port);
 
 process.on('uncaughtException', function (err) {
   console.log('Caught exception: ' + err);
