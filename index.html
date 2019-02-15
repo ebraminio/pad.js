@@ -205,8 +205,20 @@ var server = (https ? function (requestListener) {
       return res.end();
     }
   }
+  if (!noUpload) {
+    if (path.indexOf('/@legacyupload') === 0) {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(
+        '<form action="legacy" method="post" enctype="multipart/form-data">' +
+          '<input type="file" name="fileToUpload" id="fileToUpload" ' +
+            'onchange="document.forms[0].action = this.value.split(\'\\\\\').slice(-1)[0]">' +
+          '<input type="submit" value="Upload" name="submit">' +
+        '</form>'
+      );
+    }
+  }
   if (cmd) {
-    if (path.indexOf('/@cmd/') === 0) {
+    if (path.indexOf('/@cmd') === 0) {
       res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
       return exec(decodeURI(req.url).split('/@cmd/')[1] + ' 2>&1').stdout.pipe(res);
     }
@@ -301,10 +313,10 @@ var server = (https ? function (requestListener) {
 
         console.log('"' + path + '" SAVED!');
         res.writeHead(200, {
-          'Content-Type' : 'text/plain',
+          'Content-Type' : 'text/html',
           'Access-Control-Allow-Origin': '*'
         });
-        return res.end('OK');
+        return res.end('UPLOADED');
       });
     });
   }
