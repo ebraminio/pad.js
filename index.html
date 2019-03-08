@@ -173,6 +173,7 @@ var server = (https ? function (requestListener) {
   }, requestListener);
 } : require('http').createServer)(function (req, res) {
   lastActivityTimestamp = Date.now();
+  console.log(req.connection.remoteAddress + ' accessed ' + req.url);
 
   if (userpass && ((req.headers.authorization || '').split(' ')[1] || '') !== userpass) {
     res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="nope"' });
