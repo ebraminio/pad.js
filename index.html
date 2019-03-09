@@ -441,9 +441,7 @@ var server = (https ? function (requestListener) {
           try {
             fileStats = fs.statSync(cwd + path + x);
           } catch (e) {
-            res.writeHead(500);
-            res.end('HTTP Error 500 Internal Error ' + e);
-            return { name: e.message };
+            fileStats = { size: '', mtime: 0, isDirectory: function () { return false; } };
           }
           var ext = x.replace(/^.*\.(.*)$/, "$1");
           return {
