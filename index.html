@@ -206,18 +206,6 @@ var server = (https ? function (requestListener) {
       return res.end();
     }
   }
-  if (!noUpload) {
-    if (path.indexOf('/@legacyupload') === 0) {
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      return res.end(
-        '<form action="legacy" method="post" enctype="multipart/form-data">' +
-          '<input type="file" name="fileToUpload" id="fileToUpload" ' +
-            'onchange="document.forms[0].action = this.value.split(\'\\\\\').slice(-1)[0]">' +
-          '<input type="submit" value="Upload" name="submit">' +
-        '</form>'
-      );
-    }
-  }
   if (cmd) {
     if (path.indexOf('/@cmd') === 0) {
       res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -418,7 +406,13 @@ var server = (https ? function (requestListener) {
         (noUpload ? '' : ' <div style="float: right">' +
           '<a onclick="createFolder(); return false;" href="#" title="Create a folder">📁</a> ' +
           '<a onclick="noteSubmit(); return false;" href="#" title="Create a note">📝</a> ' +
-          '<input type="file" onchange="upload(this.files)" multiple></div>'),
+          '<form method="post" enctype="multipart/form-data" style="display: inline">' +
+            '<input type="file" name="fileToUpload" id="fileToUpload" multiple ' +
+              'onchange="if (window.FormData) upload(this.files); else {' +
+              '  var form = this.parentElement;' +
+              '  form.action = this.value.split(\'\\\\\').slice(-1)[0];' +
+              '  form.submit();' +
+              '}"></form></div>'),
         ' <h2 style="margin-bottom: 12px;">Index of /' +
           path.split('/').map(function (x, i, arr) {
             return '<a href="/' +
