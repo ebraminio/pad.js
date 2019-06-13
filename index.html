@@ -5,7 +5,7 @@ var os = require('os');
 var url = require('url');
 var exec = require('child_process').exec;
 
-// http://stackoverflow.com/a/38897674/1414809
+// http://stackoverflow.com/a/38897674
 function fileSizeSI(size) {
   var e = (Math.log(size) / Math.log(1e3)) | 0;
   return Math.floor(size / Math.pow(1e3, e)) + ('kMGTPEZY'[e - 1] || '') + 'B';
@@ -337,7 +337,7 @@ var server = (https ? function (requestListener) {
       if (noMime && !/^(audio|video)\//.test(contentType))
         contentType = 'application/octet-stream';
 
-      // http://stackoverflow.com/a/28972079/1414809
+      // http://stackoverflow.com/a/28972079
       if (req.headers.range) {
         var parts = req.headers.range.replace(/bytes=/, "").split("-");
 
@@ -651,7 +651,7 @@ function listen(port) {
     console.log('pad.js is listening on ' + port +
       ' port of ' + (localOnly ? 'local' : 'all') + ' network interface(s)');
     var ifs = os.networkInterfaces();
-    // http://stackoverflow.com/a/38929214/1414809
+    // http://stackoverflow.com/a/38929214
     console.log('(' + Object.keys(ifs)
       .map(function (x) {
         return [x, ifs[x].filter(function (x) { return x.family === 'IPv4'; })[0]];
@@ -675,7 +675,7 @@ process.on('uncaughtException', function (err) {
 <h1>pad.js</h1>
 <h2>Total fancy node.js webserver for transferring files from/to browser console and terminal</h2>
 
-<em><a href="https://stackoverflow.com/a/44990733/1414809">What is this?</a></em> (stackoverflow)
+<em><a href="https://stackoverflow.com/a/44990733">What is this?</a></em> (stackoverflow)
 
 <h3>Setup:</h3>
 <pre>curl pad.js.org | node</pre>
