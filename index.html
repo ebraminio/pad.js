@@ -590,7 +590,7 @@ var server = (https ? function (requestListener) {
         '  var jobs = Array.prototype.slice.call(files).map(function (file) {',
         '    return function (callback) {',
         '      var name = file.name;',
-        '      if (!name || name.split('.')[0] === 'image')', // image.{png,jpeg,...}
+        '      if (!name || name.split(".")[0] === "image")', // image.{png,jpeg,...}
         '        name = Date.now() + "." + file.type.split("/")[1];',
         '      var formData = new FormData();',
         '      formData.append("blob", file);',
