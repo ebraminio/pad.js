@@ -4,6 +4,7 @@ var fs = require('fs');
 var os = require('os');
 var url = require('url');
 var exec = require('child_process').exec;
+var nativePathSep = require('path').sep;
 
 // http://stackoverflow.com/a/38897674
 function fileSizeSI(size) {
@@ -153,7 +154,7 @@ if (hasOption('-h') || hasOption('--help')) {
 if (servedir) {
   process.chdir(servedir);
 }
-var cwd = process.cwd() + '/';
+var cwd = process.cwd() + nativePathSep;
 
 
 var lastActivityTimestamp = Date.now();
@@ -234,7 +235,7 @@ var server = (https ? function (requestListener) {
   }
 
   try {
-    if ((fs.realpathSync(path.replace(/[^\/\\]+$/, '')) + '/').indexOf(cwd) !== 0) {
+    if ((fs.realpathSync(path.replace(/[^\/\\]+$/, '')) + nativePathSep).indexOf(cwd) !== 0) {
       res.writeHead(404);
       return res.end('HTTP Error 404 File not found, invalid path');
     }
