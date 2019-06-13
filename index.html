@@ -652,7 +652,7 @@ function listen(port) {
       ' port of ' + (localOnly ? 'local' : 'all') + ' network interface(s)');
     var ifs = os.networkInterfaces();
     // http://stackoverflow.com/a/38929214
-    console.log('(' + Object.keys(ifs)
+    console.log(Object.keys(ifs)
       .map(function (x) {
         return [x, ifs[x].filter(function (x) { return x.family === 'IPv4'; })[0]];
       })
@@ -660,7 +660,7 @@ function listen(port) {
       .filter(function (x) { return !localOnly || (x[1].address === '127.0.0.1'); })
       .map(function (x) { return x[0] + ': ' + (https ? 'https' : 'http') + '://' +
         x[1].address + ':' + port; })
-      .join(', ') + ')');
+      .join(' - '));
   });
 
   canary.listen(port, localOnly ? '127.0.0.1' : '0.0.0.0');
