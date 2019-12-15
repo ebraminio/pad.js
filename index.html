@@ -155,7 +155,7 @@ if (servedir) {
   process.chdir(servedir);
 }
 var cwd = process.cwd() + nativePathSep;
-
+var emptyBuffer = Buffer.alloc(0);
 
 var lastActivityTimestamp = Date.now();
 if (timeout !== -1) {
@@ -277,37 +277,62 @@ var server = (https ? function (requestListener) {
   }
 
   if (req.method === 'POST') {
-    // aggregate received chunks of file
-    var bufferArray = [];
-    req.on('data', function (data) {
-      bufferArray.push(data);
+    var writeStream = fs.createWriteStream(cwd + path, { flags: writeFlag });
+    var isInError = false;
+    writeStream.on('error', function (err) {
+      isInError = true;
+      console.error(err.message);
+      res.writeHead(409);
+      return res.end('HTTP Error 409 Conflict, a file with the same name exists');
+    });
+
+    var previousPreviousBuffer = emptyBuffer;
+    var previousBuffer = emptyBuffer;
+    var expectingHeader = true;
+
+    req.on('data', function (buffer) {
+      if (isInError) return;
+
+      if (expectingHeader) {
+        // buffer.indexOf('\r\n\r\n') + 4 but for older nodes, 13 => '\r'
+        for (var start = 4; start < buffer.length; ++start)
+          if (buffer[start - 2] === 13 && buffer[start - 4] === 13) break;
+
+        // Expecting stream to have enough buffer size to have '\r\n\r\n' in its first packet
+        if (start === buffer.length) {
+          isInError = true;
+          console.error('Invalid request stream');
+          res.writeHead(400);
+          return res.end('HTTP Error 400 Bad request. Invalid stream format');
+        }
+
+        buffer = buffer.slice(start);
+        expectingHeader = false;
+      }
+
+      writeStream.write(previousPreviousBuffer);
+      previousPreviousBuffer = previousBuffer;
+      previousBuffer = buffer;
     });
 
     return req.on('end', function () {
-      var buffer = Buffer.concat(bufferArray);
+      if (isInError) return;
 
-      // buffer.indexOf('\r\n\r\n') + 4 but for older nodes, 13 => '\r'
-      for (var start = 4; start < buffer.length; ++start)
-        if (buffer[start - 2] === 13 && buffer[start - 4] === 13) break;
+      var buffer = Buffer.concat([previousPreviousBuffer, previousBuffer]);
 
       // buffer.lastIndexOf('\r\n-') but for older nodes, 13 => '\r', 45 => '-'
       for (var end = buffer.length - 1 - 2; end >= 0; --end)
         if (buffer[end] === 13 && buffer[end + 2] === 45) break;
 
-      fs.writeFile(cwd + path, buffer.slice(start, end), { flag: writeFlag }, function (err) {
-        if (err) {
-          console.error(err.message);
-          res.writeHead(409);
-          return res.end('HTTP Error 409 Conflict, a file with same name exists');
-        }
+      writeStream.write(buffer.slice(0, end));
+      writeStream.end();
 
-        console.log('"' + path + '" SAVED!');
-        res.writeHead(200, {
-          'Content-Type' : 'text/html',
-          'Access-Control-Allow-Origin': '*'
-        });
-        return res.end('UPLOADED');
+      console.log('"' + path + '" SAVED!');
+      res.writeHead(200, {
+        'Content-Type' : 'text/plain',
+        'Access-Control-Allow-Origin': '*'
       });
+      return res.end('UPLOADED');
     });
   }
 
