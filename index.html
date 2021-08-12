@@ -294,19 +294,17 @@ var server = (https ? function (requestListener) {
       if (isInError) return;
 
       if (expectingHeader) {
-        // buffer.indexOf('\r\n\r\n') + 4 but for older nodes, 13 => '\r'
-        for (var start = 4; start < buffer.length; ++start)
-          if (buffer[start - 2] === 13 && buffer[start - 4] === 13) break;
+        var index = buffer.indexOf('\r\n\r\n');
 
         // Expecting stream to have enough buffer size to have '\r\n\r\n' in its first packet
-        if (start === buffer.length) {
+        if (index === -1) {
           isInError = true;
           console.error('Invalid request stream');
           res.writeHead(400);
           return res.end('HTTP Error 400 Bad request. Invalid stream format');
         }
 
-        buffer = buffer.slice(start);
+        buffer = buffer.slice(index + 4);
         expectingHeader = false;
       }
 
