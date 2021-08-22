@@ -317,10 +317,7 @@ var server = (https ? function (requestListener) {
       if (isInError) return;
 
       var buffer = Buffer.concat([previousPreviousBuffer, previousBuffer]);
-
-      // buffer.lastIndexOf('\r\n-') but for older nodes, 13 => '\r', 45 => '-'
-      for (var end = buffer.length - 1 - 2; end >= 0; --end)
-        if (buffer[end] === 13 && buffer[end + 2] === 45) break;
+      var end = buffer.lastIndexOf('\r\n-');
 
       writeStream.write(buffer.slice(0, end));
       writeStream.end();
