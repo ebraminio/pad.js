@@ -378,6 +378,7 @@ var server = (https ? function (requestListener) {
 
       console.log('"' + path + '" SERVED!');
       res.writeHead(200, {
+        'Accept-Ranges': 'bytes',
         'Content-Length': stats.size,
         'Content-Type': contentType,
         'Access-Control-Allow-Origin': '*'
