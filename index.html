@@ -154,7 +154,7 @@ if (hasOption('-h') || hasOption('--help')) {
 if (servedir) {
   process.chdir(servedir);
 }
-var cwd = process.cwd() + nativePathSep;
+var cwd = fs.realpathSync(process.cwd() + nativePathSep);
 var emptyBuffer = Buffer.alloc(0);
 
 var lastActivityTimestamp = Date.now();
