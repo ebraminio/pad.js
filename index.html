@@ -155,7 +155,7 @@ if (servedir) {
   process.chdir(servedir);
 }
 var cwd = process.cwd();
-if (cwd[cwd.length - 1] !== nativePathSep) cwd = cwd + nativePathSep;
+if (!cwd.endsWith(nativePathSep)) cwd = cwd + nativePathSep;
 var emptyBuffer = Buffer.alloc(0);
 
 var lastActivityTimestamp = Date.now();
