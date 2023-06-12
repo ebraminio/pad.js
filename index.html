@@ -106,6 +106,7 @@ var noUpload = hasOption('--no-upload');
 var noIndex = hasOption('--no-index');
 var https = hasOption('--https');
 var cmd = hasOption('--cmd');
+var noCrossOriginIsolation = hasOption('--no-cross-origin-isolation');
 
 // 'wx' disallows file replace
 var writeFlag = hasOption('--replace') ? 'w' : 'wx';
@@ -358,6 +359,11 @@ var server = (https ? function (requestListener) {
 
       if (noMime && !/^(audio|video)\//.test(contentType))
         contentType = 'application/octet-stream';
+
+      if (!noCrossOriginIsolation) {
+        res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+        res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+      }
 
       // http://stackoverflow.com/a/28972079
       if (req.headers.range) {
