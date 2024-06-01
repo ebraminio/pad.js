@@ -107,6 +107,7 @@ var noIndex = hasOption('--no-index');
 var https = hasOption('--https');
 var cmd = hasOption('--cmd');
 var noCrossOriginIsolation = hasOption('--no-cross-origin-isolation');
+var followOutsideLinks = hasOption('--follow-symbolic-links');
 
 // 'wx' disallows file replace
 var writeFlag = hasOption('--replace') ? 'w' : 'wx';
@@ -140,11 +141,13 @@ if (hasOption('-h') || hasOption('--help')) {
     '      --https      enable https',
     '  -h, --help       display this help and exit',
     '',
-    '      --userpass=user:pass  run pad.js instance password protected',
-    '      --prefix=/prefix      expect pad.js to have the specified prefix',
-    '      --servedir=/files     serve pad.js from the specified directory',
-    '      --timeout=10          minutes to exit if no request is issued,',
-    '                            default is 10, -1 to disable',
+    '      --userpass=user:pass    run pad.js instance password protected',
+    '      --prefix=/prefix        expect pad.js to have the specified prefix',
+    '      --servedir=/files       serve pad.js from the specified directory',
+    '      --timeout=10            minutes to exit if no request is issued,',
+    '                              default is 10, -1 to disable',
+    '      --follow-outside-links  add this if you like the tool follow a',
+    '                              filesystem link outside the working directory',
     '',
     'The PORT argument is an integer and optional, its default value is 9090',
     'and can be set from environment variables also'
@@ -237,7 +240,7 @@ var server = (https ? function (requestListener) {
   }
 
   try {
-    if ((fs.realpathSync(path.replace(/[^\/\\]+$/, '')) + nativePathSep).indexOf(cwd) !== 0) {
+    if (!followOutsideLinks && (fs.realpathSync(path.replace(/[^\/\\]+$/, '')) + nativePathSep).indexOf(cwd) !== 0) {
       res.writeHead(404);
       return res.end('HTTP Error 404 File not found, invalid path');
     }
