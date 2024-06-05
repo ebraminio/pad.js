@@ -472,7 +472,7 @@ var server = (https ? function (requestListener) {
         '     <th onclick="sort(3); return false;"><a href="#">Size:</a></th>',
         '     <th onclick="sort(4); return false;"><a href="#">Type:</a></th>',
         '    </tr>', '   </thead>', '   <tbody>',
-        ['..'].concat(dir).map(function (x) {
+        (path === '' ? [] : ['..']).concat(dir).map(function (x) {
           var fileStats;
           try {
             fileStats = fs.statSync(cwd + path + x);
