@@ -423,15 +423,19 @@ var server = (https ? function (requestListener) {
         '<head>',
         ' <meta charset="utf-8">',
         ' <meta name="viewport" content="width=device-width, initial-scale=1">',
+        ' <meta name="color-scheme" content="light dark">',
         ' <link rel="icon" href="data:,">',
         ' <style>',
           'td:nth-child(3), th:nth-child(3) { text-align: right; }',
           'th, td { padding: 0 14px 0 0; } th { padding-bottom: 3px; }',
           'a, a:active { text-decoration: none; }',
-          'a { color: blue; }',
-          'a:visited { color: #48468F; }',
           'a:hover, a:focus { text-decoration: underline; color: red; }',
           'body { background-color: #F5F5F5; }',
+          '#main { background-color: white; }',
+          // Used instead of light-dark for better backward compatibility
+          '@media (prefers-color-scheme: dark) {',
+          ' body, #main { background-color: transparent; }',
+          '}',
           '@media (max-width: 800px) {',
           '  table, tbody, tr { display: block; }',
           '  td:nth-child(2), td:nth-child(4), thead { display: none; }',
@@ -460,7 +464,7 @@ var server = (https ? function (requestListener) {
               quoteattr(arr.slice(0, i + 1).join('/')) + '/">' +
               escapeHtml(x) + '</a>';
           }).join('/') + '</h2>',
-        ' <div style="background-color: white;' +
+        ' <div id="main" style="' +
           ' border-top: 1px solid #646464; border-bottom: 1px solid #646464;' +
           ' padding-top: 10px; padding-bottom: 14px;">',
         '  <table ellpadding="0" cellspacing="0" style="' +
