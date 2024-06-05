@@ -347,8 +347,7 @@ var server = (https ? function (requestListener) {
 
   return fs.stat(cwd + path, function (err, stats) {
     if (err) {
-      if (path.indexOf('favicon.ico') === -1) // don't show error for lack of favicon
-        console.error('"' + path + '" was requested but not found.');
+      console.error('"' + path + '" was requested but not found.');
       res.writeHead(404);
       return res.end('HTTP 404 File not found');
     }
