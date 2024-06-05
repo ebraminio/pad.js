@@ -454,7 +454,8 @@ var server = (https ? function (requestListener) {
               '  form.action = this.value.split(\'\\\\\').slice(-1)[0];' +
               '  form.submit();' +
               '}"></form></div>'),
-        ' <h2 style="margin-bottom: 12px;">Index of /' +
+        ' <h2 style="margin-bottom: 12px;">Index of ' +
+          (path === '' ? '' : '<a href="/">.</a>') + '/' +
           path.split('/').map(function (x, i, arr) {
             return '<a href="/' +
               quoteattr(arr.slice(0, i + 1).join('/')) + '/">' +
