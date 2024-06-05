@@ -4,7 +4,8 @@ var fs = require('fs');
 var os = require('os');
 var url = require('url');
 var exec = require('child_process').exec;
-var nativePathSep = require('path').sep;
+var pathLib = require('path');
+var nativePathSep = pathLib.sep;
 
 // http://stackoverflow.com/a/38897674
 function fileSizeSI(size) {
@@ -148,6 +149,7 @@ if (hasOption('-h') || hasOption('--help')) {
     '                              default is 10, -1 to disable',
     '      --follow-outside-links  add this if you like the tool follow a',
     '                              filesystem link outside the working directory',
+    '                              and it allows creating nested files',
     '',
     'The PORT argument is an integer and optional, its default value is 9090',
     'and can be set from environment variables also'
@@ -282,6 +284,13 @@ var server = (https ? function (requestListener) {
   }
 
   if (req.method === 'POST') {
+    if (followOutsideLinks) {
+      try {
+        fs.mkdirSync(pathLib.dirname(cwd + path), { recursive: true });
+      } catch (e) {
+        return res.end('HTTP 404 Failed to create parent folder');
+      }
+    }
     var writeStream = fs.createWriteStream(cwd + path, { flags: writeFlag });
     var isInError = false;
     writeStream.on('error', function (err) {
