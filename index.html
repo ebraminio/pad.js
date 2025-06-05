@@ -360,7 +360,7 @@ var server = (https ? function (requestListener) {
     }
 
     if (!stats.isDirectory()) { // i.e. is a file
-      var contentType = contentTypes[path.replace(/^.*\.(.*)$/, "$1")];
+      var contentType = contentTypes[path.toLowerCase().replace(/^.*\.(.*)$/, "$1")];
 
       if (contentType === undefined) // fallback mime
         contentType = 'application/octet-stream';
