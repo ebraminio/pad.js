@@ -516,7 +516,7 @@ var server = (https ? function (requestListener) {
                 x.date.toISOString().replace('T', ' ').split('.')[0] + '</td>') +
             '\n    <td title="' + x.size + '">' +
             (x.isDir ? '-&nbsp;&nbsp;' : fileSizeSI(x.size)) + '</td>' +
-            '\n    <td>' + (x.isDir ? 'Directory' : contentTypes[x.ext] || '') +
+            '\n    <td>' + (x.isDir ? 'Directory' : contentTypes[x.ext.toLowerCase()] || '') +
             '</td>\n   </tr>';
         }).join('\n'),
         '  </tbody></table>',
