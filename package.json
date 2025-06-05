@@ -23,7 +23,7 @@
     "start": "node index.html"
   },
   "bin": {
-    "pad.js": "./pad-cli",
-    "pad": "./pad-cli"
+    "pad.js": "pad-cli",
+    "pad": "pad-cli"
   }
 }
